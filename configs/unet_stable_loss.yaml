@@ -2,7 +2,7 @@
 # Cấu hình baseline ổn định cho Thử nghiệm 1
 
 # --- Run & Environment ---
-run_name: "unet_stable_loss_v1"
+run_name: "unet_stable_loss_Multi_scale"
 base_output_dir: "training_runs"
 class_names: ["Road (tarmac)", "Road marks", "Painted metal", "Sky", "Concrete/stone/brick"]
 
