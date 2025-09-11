@@ -1,0 +1,61 @@
+# configs/unet_paper_replica.yaml
+
+# --- Run & Environment ---
+run_name: "unet_hybrid_adamw_v1" # Đổi tên để phản ánh sự thay đổi
+base_output_dir: "training_runs"
+class_names: ["Road (tarmac)", "Road marks", "Painted metal", "Sky", "Concrete/stone/brick"]
+
+# --- Model & Architecture ---
+model:
+  name: "HybridUNet"
+  params:
+    in_channels: 25
+    selected_channels: 25
+    num_classes: 5
+    bilinear: True
+    base_filters: 32
+
+# --- Data & Preprocessing ---
+data:
+  dir: "Image_dataset"
+  normalization: "z-score"
+  patching:
+    patch_size: 512
+    stride: 256
+  class_mapping: {1: 0, 2: 1, 4: 2, 5: 3, 6: 4, 0: 0, 3: 2, 7: 2, 9: 2, 10: 4}
+
+# --- Augmentation (Giữ nguyên) ---
+augmentation:
+  elastic_transform: {p: 0.5, alpha: 120, sigma: 6}
+  shift_scale_rotate: {p: 0.7, shift_limit: 0.0625, scale_limit: 0.1, rotate_limit: 15}
+  random_brightness_contrast: {p: 0.3}
+  gauss_noise: {p: 0.2}
+
+# --- Training ---
+training:
+  batch_size: 24
+  num_epochs: 140 # Có thể giảm xuống 100 để test nhanh hơn
+  early_stopping_patience: 35
+
+# --- Optimizer & Scheduler (FIX: QUAY LẠI PHIÊN BẢN ỔN ĐỊNH) ---
+optimizer:
+  name: 'AdamW'
+  params:
+    lr: 0.0001 # LR thấp và ổn định
+    weight_decay: 0.0001
+scheduler:
+  # name: 'CosineAnnealingLR' # Scheduler mượt mà
+  # params:
+  #   T_max_epochs_offset: 0
+  #   eta_min: 0.000001
+
+  name: 'StepLR' # test code mẫu
+  params:
+    step_size: 30 # Số epoch trước khi giảm LR
+    gamma: 0.1    # Hệ số giảm LR (lr = lr * gamma)
+
+# --- Loss Function (Giữ nguyên, rất quan trọng) ---
+loss:
+  name: 'WeightedCombinedLoss'
+  boundary_weight: {w0: 10.0, sigma: 5.0}
+  params: {alpha: 1.0, beta: 0.5}

@@ -1,0 +1,58 @@
+# configs/unet_stable_loss_150.yaml
+# Cấu hình baseline ổn định cho Thử nghiệm 1
+
+# --- Run & Environment ---
+run_name: "unet_stable_loss_v1"
+base_output_dir: "training_runs"
+class_names: ["Road (tarmac)", "Road marks", "Painted metal", "Sky", "Concrete/stone/brick"]
+
+# --- Model & Architecture ---
+# Sử dụng U-Net tiêu chuẩn để chẩn đoán
+model:
+  name: "UNet"
+  params:
+    in_channels: 25
+    num_classes: 5
+    bilinear: True
+    base_filters: 64
+
+# --- Data & Preprocessing ---
+data:
+  dir: "Image_dataset"
+  normalization: "z-score"
+  patching:
+    patch_size: 384
+    stride: 192
+  class_mapping: {1: 0, 2: 1, 4: 2, 5: 3, 6: 4, 0: 0, 3: 2, 7: 2, 9: 2, 10: 4}
+
+# --- Augmentation ---
+augmentation:
+  elastic_transform: {p: 0.5, alpha: 120, sigma: 6}
+  shift_scale_rotate: {p: 0.7, shift_limit: 0.0625, scale_limit: 0.1, rotate_limit: 15}
+  random_brightness_contrast: {p: 0.3}
+  gauss_noise: {p: 0.2}
+
+# --- Training ---
+training:
+  batch_size: 16
+  num_epochs: 150
+  early_stopping_patience: 25
+
+# --- Optimizer & Scheduler ---
+optimizer:
+  name: 'AdamW'
+  params:
+    lr: 0.0001
+    weight_decay: 0.0001
+scheduler:
+  name: 'CosineAnnealingLR'
+  params:
+    T_max_epochs_offset: 0
+    eta_min: 0.000001
+
+# --- Loss Function (THAY ĐỔI QUAN TRỌNG NHẤT) ---
+loss:
+  name: 'CombinedLoss' # Sử dụng hàm loss ổn định
+  params: 
+    alpha: 0.5 # Cân bằng giữa CE và Dice
+    beta: 0.5

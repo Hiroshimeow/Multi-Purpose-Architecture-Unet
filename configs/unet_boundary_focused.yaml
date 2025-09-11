@@ -1,0 +1,66 @@
+# configs/unet_boundary_focused.yaml
+
+# --- Run & Environment ---
+run_name: "unet_test"
+base_output_dir: "training_runs"
+class_names: ["Road (tarmac)", "Road marks", "Painted metal", "Sky", "Concrete/stone/brick"]
+
+# --- Model & Architecture ---
+model:
+  name: "UNet"
+  params:
+    in_channels: 25
+    num_classes: 5
+    bilinear: True
+    # Gợi ý: Bắt đầu với model nhẹ hơn để training nhanh hơn
+    # base_filters: 32 
+
+# --- Data & Patching Strategy (THEO PAPER) ---
+data:
+  dir: "dataset_40_for_test"
+  # Không còn target_size toàn cục, thay bằng chiến lược patch
+  patching:
+    patch_size: 512 # Kích thước của mỗi patch đưa vào model
+    stride: 256      # Bước nhảy giữa các patch -> tạo ra sự chồng lấp
+  class_mapping: {1: 0, 2: 1, 4: 2, 5: 3, 6: 4, 0: 0, 3: 2, 7: 2, 9: 2, 10: 4}
+
+# --- Augmentation (THEO PAPER) ---
+augmentation:
+  elastic_transform:
+    p: 0.5         # Tỷ lệ áp dụng
+    alpha: 120     # Độ mạnh của trường dịch chuyển
+    sigma: 6       # Độ mượt của trường dịch chuyển (alpha / 20)
+    alpha_affine: 25 # Độ mạnh của biến đổi affine
+
+# --- Training ---
+training:
+  batch_size: 8 # Giảm batch size vì patch lớn và weight map tốn bộ nhớ
+  num_epochs: 150 # Tăng số epoch vì mô hình cần học các đặc trưng khó hơn
+  early_stopping_patience: 25
+
+# --- Optimizer & Scheduler ---
+optimizer:
+  name: 'AdamW'
+  params:
+    lr: 0.0001
+    weight_decay: 0.0001
+scheduler:
+  name: 'CosineAnnealingLR'
+  params:
+    T_max_epochs_offset: 0
+    eta_min: 0.000001
+
+# --- Loss Function (THEO PAPER) ---
+loss:
+  name: 'WeightedCombinedLoss'
+  # Tham số cho việc tạo weight map ở ranh giới
+  boundary_weight:
+    w0: 10.0
+    sigma: 5.0
+  # Tham số cho việc kết hợp loss
+  params:
+    alpha: 1.0 # Trọng số cho CrossEntropy có trọng số pixel
+    beta: 0.5  # Trọng số cho Dice Loss
+
+
+

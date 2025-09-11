@@ -1,0 +1,224 @@
+# src/trainer.py
+from tqdm import tqdm
+import torch
+import numpy as np
+from sklearn.metrics import accuracy_score, jaccard_score
+import time
+import random
+
+class Trainer:
+    def __init__(self, model, optimizer, scheduler, criterion, train_loader, val_loader, manager, device, config):
+        self.model = model
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.criterion = criterion
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.manager = manager
+        self.device = device
+        self.config = config
+        self.scaler = torch.amp.GradScaler(enabled=(self.device.type == 'cuda'))
+        self.start_epoch = 0
+        self.best_miou = 0.0
+        
+    def _load_state(self):
+        if self.manager.checkpoint_exists("latest_checkpoint.pth"):
+            state = self.manager.load_checkpoint("latest_checkpoint.pth")
+            if state:
+                self.model.load_state_dict(state['model_state_dict'])
+                self.optimizer.load_state_dict(state['optimizer_state_dict'])
+                self.scheduler.load_state_dict(state['scheduler_state_dict'])
+                self.start_epoch = state['epoch']
+                self.best_miou = state['best_miou']
+                if 'scaler_state_dict' in state:
+                    self.scaler.load_state_dict(state['scaler_state_dict'])
+                print(f"✓ Resumed training from epoch {self.start_epoch}.")
+
+    def train(self):
+        self._load_state()
+        patience_counter = 0
+        
+        for epoch in range(self.start_epoch, self.config['training']['num_epochs']):
+            epoch_num = epoch + 1
+            print(f"\n--- Epoch {epoch_num}/{self.config['training']['num_epochs']} ---")
+            
+            train_loss = self._train_one_epoch()
+            val_loss, val_acc, val_miou, val_samples = self._evaluate()
+            
+            if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                self.scheduler.step(val_loss)
+            else:
+                self.scheduler.step()
+            
+            metrics = {'epoch': epoch_num, 'train_loss': train_loss, 'val_loss': val_loss, 'val_acc': val_acc, 'val_miou': val_miou, 'lr': self.optimizer.param_groups[0]['lr']}
+            self.manager.log_epoch(metrics)
+            print(f"Epoch {epoch_num} Summary: Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f} | Val mIoU: {val_miou:.4f}")
+
+            is_best = val_miou > self.best_miou
+            if is_best:
+                self.best_miou = val_miou
+                patience_counter = 0
+                print(f"✨ New best mIoU: {val_miou:.4f}. Saving model and prediction samples...")
+                # FIX: Logic lưu sample vẫn hoạt động bình thường
+                if val_samples:
+                    self.manager.save_prediction_samples(val_samples)
+            else:
+                patience_counter += 1
+            
+            checkpoint_state = {
+                'epoch': epoch_num, 
+                'model_state_dict': self.model.state_dict(), 
+                'optimizer_state_dict': self.optimizer.state_dict(), 
+                'scheduler_state_dict': self.scheduler.state_dict(), 
+                'best_miou': self.best_miou,
+                'scaler_state_dict': self.scaler.state_dict()
+            }
+            self.manager.save_checkpoint(state=checkpoint_state, is_best=is_best)
+            
+            if patience_counter >= self.config['training']['early_stopping_patience']:
+                print(f"🛑 Early stopping triggered after {patience_counter} epochs without improvement.")
+                break
+        
+        self._run_final_analysis()
+
+    def _train_one_epoch(self):
+        self.model.train()
+        total_loss = 0.0
+        pbar = tqdm(self.train_loader, desc="Training", leave=False)
+        # FIX: Dataloader chỉ trả về images và masks
+        for images, masks in pbar:
+            images = images.to(self.device, non_blocking=True)
+            masks = masks.to(self.device, non_blocking=True)
+            
+            self.optimizer.zero_grad(set_to_none=True)
+            
+            with torch.amp.autocast(device_type=self.device.type, dtype=torch.float16, enabled=(self.device.type == 'cuda')):
+                outputs = self.model(images)
+                # FIX: Gọi hàm loss chỉ với outputs và masks
+                loss = self.criterion(outputs, masks)
+            
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            
+            total_loss += loss.item()
+            pbar.set_postfix(loss=f"{loss.item():.4f}")
+        return total_loss / len(self.train_loader)
+    
+    def _evaluate(self, num_samples_to_save=8):
+        self.model.eval()
+        total_loss = 0.0
+        all_preds, all_trues = [], []
+        saved_samples = []
+        
+        with torch.no_grad():
+            pbar = tqdm(self.val_loader, desc="Validating", leave=False)
+            # FIX: Dataloader chỉ trả về images và masks
+            for images, masks in pbar:
+                images = images.to(self.device, non_blocking=True)
+                masks = masks.to(self.device, non_blocking=True)
+                
+                with torch.amp.autocast(device_type=self.device.type, dtype=torch.float16, enabled=(self.device.type == 'cuda')):
+                    outputs = self.model(images)
+                    # FIX: Gọi hàm loss chỉ với outputs và masks
+                    loss = self.criterion(outputs, masks)
+                
+                total_loss += loss.item()
+                preds = torch.argmax(outputs, dim=1)
+                
+                all_preds.append(preds.cpu().numpy())
+                all_trues.append(masks.cpu().numpy())
+
+                if len(saved_samples) < num_samples_to_save:
+                    batch_size = images.shape[0]
+                    for i in range(batch_size):
+                        if len(saved_samples) < num_samples_to_save:
+                            # Cần kiểm tra image đã được normalize kiểu gì để un-normalize
+                            # Hiện tại, chỉ lưu ảnh đã normalize để visualization
+                            img_np = images[i].permute(1, 2, 0).cpu().numpy()
+                            mask_np = masks[i].cpu().numpy()
+                            pred_np = preds[i].cpu().numpy()
+                            saved_samples.append((img_np, mask_np, pred_np))
+                        else:
+                            break
+        
+        random.shuffle(saved_samples)
+
+        flat_preds = np.concatenate([p.flatten() for p in all_preds])
+        flat_trues = np.concatenate([t.flatten() for t in all_trues])
+        
+        accuracy = accuracy_score(flat_trues, flat_preds)
+        miou = jaccard_score(flat_trues, flat_preds, average='macro', zero_division=0)
+        
+        return total_loss / len(self.val_loader), accuracy, miou, saved_samples
+
+    def benchmark_performance(self, num_warmup=50, num_runs=200):
+        print("\n--- Benchmarking Performance ---")
+        self.model.eval()
+        
+        try:
+            # FIX: Unpack 2 giá trị
+            dummy_input, _ = next(iter(self.val_loader))
+            dummy_input = dummy_input.to(self.device)
+        except StopIteration:
+            print("Warning: Validation loader is empty. Cannot benchmark. Using random data.")
+            bs = self.config['training']['batch_size']
+            c_param = 'selected_channels' if 'selected_channels' in self.config['model']['params'] else 'in_channels'
+            c = self.config['model']['params'][c_param]
+            h = w = self.config['data']['patching']['patch_size']
+            dummy_input = torch.randn(bs, c, h, w, device=self.device)
+
+        print(f"Input tensor shape for benchmark: {dummy_input.shape}")
+        
+        print(f"Running {num_warmup} warmup iterations...")
+        with torch.no_grad():
+            for _ in range(num_warmup):
+                _ = self.model(dummy_input)
+        if self.device.type == 'cuda': torch.cuda.synchronize()
+        
+        print(f"Running {num_runs} benchmark iterations...")
+        start_time = time.time()
+        with torch.no_grad():
+            for _ in range(num_runs):
+                _ = self.model(dummy_input)
+        if self.device.type == 'cuda': torch.cuda.synchronize()
+        end_time = time.time()
+
+        total_time = end_time - start_time
+        total_images = num_runs * dummy_input.shape[0]
+        fps = total_images / total_time
+        avg_latency_ms = (total_time / num_runs) * 1000
+        
+        print(f"✓ Benchmark complete.")
+        print(f"  - Average Latency per Batch: {avg_latency_ms:.2f} ms")
+        print(f"  - Frames Per Second (FPS): {fps:.2f}")
+        
+        return {'fps': fps, 'latency_ms': avg_latency_ms}
+
+    def _run_final_analysis(self):
+        print("\n4. Final Evaluation and Analysis...")
+        print("   Loading best model for detailed report...")
+        
+        # Sửa lỗi: Cần load model state dict từ checkpoint, không phải toàn bộ checkpoint
+        checkpoint = self.manager.load_checkpoint(filename="best_model.pth")
+        if checkpoint:
+             # best_model.pth chỉ lưu state_dict
+            self.model.load_state_dict(torch.load(self.manager.models_dir / "best_model.pth", map_location=self.device))
+        else:
+            print("Warning: best_model.pth not found. Using the last model state.")
+
+        performance_metrics = self.benchmark_performance()
+
+        all_preds, all_trues = [], []
+        with torch.no_grad():
+            # FIX: Unpack 2 giá trị
+            for images, masks in tqdm(self.val_loader, desc="Final Evaluation"):
+                outputs = self.model(images.to(self.device))
+                all_preds.append(torch.argmax(outputs, dim=1).cpu().numpy())
+                all_trues.append(masks.numpy())
+                
+        flat_preds = np.concatenate([p.flatten() for p in all_preds])
+        flat_trues = np.concatenate([t.flatten() for t in all_trues])
+        
+        self.manager.generate_final_report(self.best_miou, flat_preds, flat_trues, self.config, performance_metrics)
+        print(f"\n✅ Analysis complete. All results saved to '{self.manager.output_dir}' directory.")
