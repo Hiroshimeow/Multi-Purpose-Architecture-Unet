@@ -1,4 +1,4 @@
-python run.py --config configs/unet_stable_loss.yaml --run_name unet_stable_loss_150
+python run.py --config configs/unet_stable_loss.yaml --run_name tangpatchsize
 python run.py --config configs/unet_paper_replica.yaml --run_name unet_StepLR
 
 python analyze.py training_runs/unet_hybrid_adamw_v1_20250910_223958
