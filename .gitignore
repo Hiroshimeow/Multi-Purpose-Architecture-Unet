@@ -4,11 +4,11 @@
 # Giữ lại .gitignore
 !.gitignore
 
-# Giữ lại các loại file cần thiết
-!*.py
-!*.ipynb
-!*.md
-!*.yaml
-!*.yml
-!*.txt
-!*.csv
+# Giữ lại các loại file cần thiết trong tất cả folder
+!**/*.py
+!**/*.ipynb
+!**/*.md
+!**/*.yaml
+!**/*.yml
+!**/*.txt
+!**/*.csv
