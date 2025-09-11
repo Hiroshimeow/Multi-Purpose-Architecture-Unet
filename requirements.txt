@@ -1,0 +1,13 @@
+torch>=1.10
+torchvision
+numpy
+scikit-learn
+pyyaml
+matplotlib
+seaborn
+tqdm
+opencv-python-headless
+albumentations
+h5py
+scipy
+pandas
