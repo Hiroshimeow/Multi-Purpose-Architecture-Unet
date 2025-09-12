@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-# --- Các thành phần Loss cơ bản ---
+
+# --- Loss Components ---
 
 class DiceLoss(nn.Module):
     def __init__(self, smooth=1.0):
@@ -23,16 +24,38 @@ class DiceLoss(nn.Module):
         dice_score = (2. * intersection + self.smooth) / (cardinality + self.smooth)
         return 1. - dice_score.mean()
 
-# --- Các hàm Loss kết hợp ---
+class FocalLoss(nn.Module):
+    """
+    [NEW] Focal Loss for addressing class imbalance.
+    """
+    def __init__(self, alpha=0.25, gamma=2.0, weight=None, reduction='mean'):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.weight = torch.FloatTensor(weight) if weight is not None else None
+        self.reduction = reduction
+
+    def forward(self, logits, targets):
+        device = logits.device
+        # Use reduction='none' to get per-element loss
+        ce_loss = F.cross_entropy(logits, targets.long(), reduction='none', weight=self.weight.to(device) if self.weight is not None else None)
+        # pt is the probability of the correct class
+        pt = torch.exp(-ce_loss)
+        # This is the core focal loss formula
+        focal_loss = self.alpha * (1 - pt)**self.gamma * ce_loss
+
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            return focal_loss
+
+# --- Combined Loss Functions ---
 
 class WeightedCombinedLoss(nn.Module):
-    """
-    [GIỮ NGUYÊN] Hàm loss gốc, tập trung vào ranh giới.
-    Sử dụng CrossEntropy có trọng số pixel (pixel-wise weight map).
-    """
     def __init__(self, weight=None, alpha=1.0, beta=0.5):
         super(WeightedCombinedLoss, self).__init__()
-        # CRITICAL: reduction='none' để tính loss cho từng pixel
         self.ce_loss = nn.CrossEntropyLoss(
             weight=torch.FloatTensor(weight) if weight is not None else None,
             reduction='none'
@@ -42,22 +65,12 @@ class WeightedCombinedLoss(nn.Module):
         self.beta = beta
 
     def forward(self, logits, targets, weight_map):
-        # --- Weighted Cross Entropy ---
         ce_pixel_loss = self.ce_loss(logits, targets.long())
-        # Nhân loss của từng pixel với trọng số tương ứng
         weighted_ce_loss = (ce_pixel_loss * weight_map).mean()
-
-        # --- Dice Loss (không cần trọng số pixel) ---
         dice = self.dice_loss(logits, targets)
-        
         return self.alpha * weighted_ce_loss + self.beta * dice
     
 class CombinedLoss(nn.Module):
-    """
-    [MỚI] Hàm loss đơn giản hơn, không sử dụng weight map.
-    Chỉ kết hợp CrossEntropy (có trọng số lớp) và Dice Loss.
-    Đây là phiên bản ổn định để dùng với chiến lược cắt patch.
-    """
     def __init__(self, weight=None, alpha=0.5, beta=0.5):
         super(CombinedLoss, self).__init__()
         self.ce_loss = nn.CrossEntropyLoss(weight=torch.FloatTensor(weight) if weight is not None else None)
@@ -66,25 +79,30 @@ class CombinedLoss(nn.Module):
         self.beta = beta
 
     def forward(self, logits, targets):
-        # Hàm forward này không nhận weight_map
         ce = self.ce_loss(logits, targets.long())
         dice = self.dice_loss(logits, targets)
         return self.alpha * ce + self.beta * dice
 
-# --- [MỚI] Loss Factory ---
-def get_loss(name: str, params: dict, class_weights: np.ndarray = None):
+# --- Loss Factory ---
+def get_loss(name: str, params: dict, class_weights: np.ndarray = None, device: torch.device = None):
     """
-    Hàm factory để tạo instance của một hàm loss dựa trên tên và tham số.
+    Factory function to create a loss instance.
     """
     print(f"   Initializing loss: {name}")
     
-    # Truyền trọng số lớp vào params nếu có
+    # Pass class weights to the loss function if they are provided
     if class_weights is not None:
-        params['weight'] = class_weights.tolist()
+        # Ensure weight is a list for JSON serialization if needed, but convert to tensor for loss
+        params['weight'] = class_weights
+
+    # Remove device from params if it exists, as it's not a standard loss parameter
+    params.pop('device', None)
 
     if name == 'WeightedCombinedLoss':
         return WeightedCombinedLoss(**params)
     elif name == 'CombinedLoss':
         return CombinedLoss(**params)
+    elif name == 'FocalLoss':
+        return FocalLoss(**params)
     else:
         raise ValueError(f"Loss function '{name}' not recognized.")
