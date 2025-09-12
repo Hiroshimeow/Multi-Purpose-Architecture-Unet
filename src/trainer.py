@@ -124,7 +124,13 @@ class Trainer:
                     loss = self.criterion(outputs, masks)
                 
                 total_loss += loss.item()
-                preds = torch.argmax(outputs, dim=1)
+                # The model returns a tuple, and the first element is a list of tensors.
+                # The first tensor in the list is the main output.
+                if isinstance(outputs, tuple):
+                    main_output = outputs[0][0]
+                else:
+                    main_output = outputs
+                preds = torch.argmax(main_output, dim=1)
                 
                 all_preds.append(preds.cpu().numpy())
                 all_trues.append(masks.cpu().numpy())
@@ -214,7 +220,13 @@ class Trainer:
             # FIX: Unpack 2 giá trị
             for images, masks in tqdm(self.val_loader, desc="Final Evaluation"):
                 outputs = self.model(images.to(self.device))
-                all_preds.append(torch.argmax(outputs, dim=1).cpu().numpy())
+                # The model returns a tuple, and the first element is a list of tensors.
+                # The first tensor in the list is the main output.
+                if isinstance(outputs, tuple):
+                    main_output = outputs[0][0]
+                else:
+                    main_output = outputs
+                all_preds.append(torch.argmax(main_output, dim=1).cpu().numpy())
                 all_trues.append(masks.numpy())
                 
         flat_preds = np.concatenate([p.flatten() for p in all_preds])

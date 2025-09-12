@@ -1,11 +1,11 @@
 python run.py --config configs/unet_stable_loss.yaml --run_name tangpatchsize
 python run.py --config configs/unet_paper_replica.yaml --run_name unet_StepLR
 
-python analyze.py training_runs/unet_hybrid_adamw_v1_20250910_223958
+python analyze.py training_runs/GeminiUNet_Run_1_20250912_122252
 
 python analyze.py training_runs/unet_run_A_20250911_140000 training_runs/unet_run_B_20250911_150000
 
-python analyze.py 'training_runs/unet_paper_replica*'
+python analyze.py 'training_runs/unet_paper_replica*' 
 --- 
 Sử dụng A5000 để training
 ## 📂 Cấu trúc Project

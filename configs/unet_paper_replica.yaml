@@ -20,8 +20,8 @@ data:
   dir: "Image_dataset"
   normalization: "z-score"
   patching:
-    patch_size: 512
-    stride: 256
+    patch_size: 192
+    stride: 96
   class_mapping: {1: 0, 2: 1, 4: 2, 5: 3, 6: 4, 0: 0, 3: 2, 7: 2, 9: 2, 10: 4}
 
 # --- Augmentation (Giữ nguyên) ---
@@ -34,7 +34,7 @@ augmentation:
 # --- Training ---
 training:
   batch_size: 24
-  num_epochs: 140 # Có thể giảm xuống 100 để test nhanh hơn
+  num_epochs: 2 # Có thể giảm xuống 100 để test nhanh hơn
   early_stopping_patience: 35
 
 # --- Optimizer & Scheduler (FIX: QUAY LẠI PHIÊN BẢN ỔN ĐỊNH) ---
