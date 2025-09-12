@@ -2,6 +2,7 @@ python run.py --config configs/unet_stable_loss.yaml --run_name tangpatchsize
 python run.py --config configs/unet_paper_replica.yaml --run_name unet_StepLR
 
 python analyze.py training_runs/GeminiUNet_Run_1_20250912_122252
+python analyze.py training_runs/abc
 
 python analyze.py training_runs/unet_run_A_20250911_140000 training_runs/unet_run_B_20250911_150000
 
