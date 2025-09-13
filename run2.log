@@ -1,0 +1,139 @@
+Acquired lock: training_runs/training.lock
+ExperimentManager initialized. Path: 'training_runs/GeminiUNet_Run_1_20250912_121002'
+✓ Final configuration saved to training_runs/GeminiUNet_Run_1_20250912_121002/config.yaml
+Calculating Z-score statistics on the training set...
+Calculating Stats:   0%|          | 0/4 [00:00<?, ?it/s]Calculating Stats:  25%|██▌       | 1/4 [00:00<00:01,  1.54it/s]Calculating Stats:  75%|███████▌  | 3/4 [00:00<00:00,  4.59it/s]Calculating Stats: 100%|██████████| 4/4 [00:00<00:00,  4.61it/s]
+✓ Z-score stats calculated.
+Processing 32 files for training set...
+  0%|          | 0/32 [00:00<?, ?it/s]  6%|▋         | 2/32 [00:00<00:02, 14.00it/s] 12%|█▎        | 4/32 [00:00<00:01, 14.87it/s] 19%|█▉        | 6/32 [00:00<00:01, 14.80it/s] 25%|██▌       | 8/32 [00:00<00:01, 14.93it/s] 31%|███▏      | 10/32 [00:00<00:01, 14.92it/s] 38%|███▊      | 12/32 [00:00<00:01, 14.81it/s] 44%|████▍     | 14/32 [00:00<00:01, 14.74it/s] 50%|█████     | 16/32 [00:01<00:01, 14.95it/s] 56%|█████▋    | 18/32 [00:01<00:00, 14.94it/s] 62%|██████▎   | 20/32 [00:01<00:00, 15.03it/s] 69%|██████▉   | 22/32 [00:01<00:00, 14.94it/s] 75%|███████▌  | 24/32 [00:01<00:00, 14.93it/s] 81%|████████▏ | 26/32 [00:01<00:00, 14.98it/s] 88%|████████▊ | 28/32 [00:01<00:00, 14.84it/s] 94%|█████████▍| 30/32 [00:02<00:00, 14.88it/s]100%|██████████| 32/32 [00:02<00:00, 14.81it/s]100%|██████████| 32/32 [00:02<00:00, 14.86it/s]
+Processing 8 files for validation set...
+  0%|          | 0/8 [00:00<?, ?it/s] 25%|██▌       | 2/8 [00:00<00:00, 14.99it/s] 50%|█████     | 4/8 [00:00<00:00, 15.31it/s] 75%|███████▌  | 6/8 [00:00<00:00, 15.16it/s]100%|██████████| 8/8 [00:00<00:00, 15.22it/s]100%|██████████| 8/8 [00:00<00:00, 15.19it/s]
+✓ Data ready: 32 train patches, 8 validation patches.
+   Calculating class weights from training patches...
+Sampling weights:   0%|          | 0/32 [00:00<?, ?it/s]Sampling weights: 100%|██████████| 32/32 [00:00<00:00, 62983.45it/s]
+✓ Calculated class weights: [ 0.46789943 13.09757729  1.86130019  5.58111857  0.4830908 ]
+
+--- Epoch 1/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:01<?, ?it/s, loss=1.5168]Training:  25%|██▌       | 1/4 [00:01<00:05,  1.71s/it, loss=1.5168]Training:  25%|██▌       | 1/4 [00:01<00:05,  1.71s/it, loss=1.4802]Training:  50%|█████     | 2/4 [00:01<00:01,  1.29it/s, loss=1.4802]Training:  50%|█████     | 2/4 [00:01<00:01,  1.29it/s, loss=1.3243]Training:  75%|███████▌  | 3/4 [00:01<00:00,  2.11it/s, loss=1.3243]Training:  75%|███████▌  | 3/4 [00:02<00:00,  2.11it/s, loss=1.3094]Training: 100%|██████████| 4/4 [00:02<00:00,  3.00it/s, loss=1.3094]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.38it/s]                                                         Epoch 1 Summary: Train Loss: 1.4077 | Val Loss: 1.6382 | Val Acc: 0.4160 | Val mIoU: 0.0832
+✨ New best mIoU: 0.0832. Saving model and prediction samples...
+
+--- Epoch 2/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=1.2439]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.91it/s, loss=1.2439]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.91it/s, loss=1.3195]Training:  50%|█████     | 2/4 [00:00<00:00,  3.50it/s, loss=1.3195]Training:  50%|█████     | 2/4 [00:00<00:00,  3.50it/s, loss=1.2263]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.78it/s, loss=1.2263]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.78it/s, loss=1.2368]Training: 100%|██████████| 4/4 [00:00<00:00,  5.77it/s, loss=1.2368]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.47it/s]                                                         Epoch 2 Summary: Train Loss: 1.2566 | Val Loss: 1.6389 | Val Acc: 0.4160 | Val mIoU: 0.0832
+
+--- Epoch 3/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=1.1533]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.83it/s, loss=1.1533]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.83it/s, loss=1.2017]Training:  50%|█████     | 2/4 [00:00<00:00,  3.39it/s, loss=1.2017]Training:  50%|█████     | 2/4 [00:00<00:00,  3.39it/s, loss=1.2006]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.67it/s, loss=1.2006]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.67it/s, loss=1.1197]Training: 100%|██████████| 4/4 [00:00<00:00,  5.66it/s, loss=1.1197]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.08it/s]                                                         Epoch 3 Summary: Train Loss: 1.1688 | Val Loss: 1.6424 | Val Acc: 0.4160 | Val mIoU: 0.0832
+
+--- Epoch 4/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=1.2435]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.90it/s, loss=1.2435]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.90it/s, loss=1.0329]Training:  50%|█████     | 2/4 [00:00<00:00,  3.49it/s, loss=1.0329]Training:  50%|█████     | 2/4 [00:00<00:00,  3.49it/s, loss=1.0479]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.77it/s, loss=1.0479]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.77it/s, loss=1.0395]Training: 100%|██████████| 4/4 [00:00<00:00,  5.76it/s, loss=1.0395]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.26it/s]                                                         Epoch 4 Summary: Train Loss: 1.0910 | Val Loss: 1.6949 | Val Acc: 0.4432 | Val mIoU: 0.1984
+✨ New best mIoU: 0.1984. Saving model and prediction samples...
+
+--- Epoch 5/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.9847]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.97it/s, loss=0.9847]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.97it/s, loss=0.9801]Training:  50%|█████     | 2/4 [00:00<00:00,  3.59it/s, loss=0.9801]Training:  50%|█████     | 2/4 [00:00<00:00,  3.59it/s, loss=1.0546]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.86it/s, loss=1.0546]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.86it/s, loss=0.9852]Training: 100%|██████████| 4/4 [00:00<00:00,  5.84it/s, loss=0.9852]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.35it/s]                                                         Epoch 5 Summary: Train Loss: 1.0011 | Val Loss: 1.7508 | Val Acc: 0.4436 | Val mIoU: 0.2053
+✨ New best mIoU: 0.2053. Saving model and prediction samples...
+
+--- Epoch 6/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.9956]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.85it/s, loss=0.9956]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.85it/s, loss=0.9810]Training:  50%|█████     | 2/4 [00:00<00:00,  3.42it/s, loss=0.9810]Training:  50%|█████     | 2/4 [00:00<00:00,  3.42it/s, loss=0.9160]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.70it/s, loss=0.9160]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.70it/s, loss=0.9312]Training: 100%|██████████| 4/4 [00:00<00:00,  5.70it/s, loss=0.9312]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.32it/s]                                                         Epoch 6 Summary: Train Loss: 0.9560 | Val Loss: 1.8635 | Val Acc: 0.4357 | Val mIoU: 0.2461
+✨ New best mIoU: 0.2461. Saving model and prediction samples...
+
+--- Epoch 7/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.8971]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.91it/s, loss=0.8971]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.91it/s, loss=0.8650]Training:  50%|█████     | 2/4 [00:00<00:00,  3.50it/s, loss=0.8650]Training:  50%|█████     | 2/4 [00:00<00:00,  3.50it/s, loss=0.9433]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.78it/s, loss=0.9433]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.78it/s, loss=0.8510]Training: 100%|██████████| 4/4 [00:00<00:00,  5.77it/s, loss=0.8510]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.38it/s]                                                         Epoch 7 Summary: Train Loss: 0.8891 | Val Loss: 1.8268 | Val Acc: 0.1376 | Val mIoU: 0.1391
+
+--- Epoch 8/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.8472]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.82it/s, loss=0.8472]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.82it/s, loss=0.8714]Training:  50%|█████     | 2/4 [00:00<00:00,  3.37it/s, loss=0.8714]Training:  50%|█████     | 2/4 [00:00<00:00,  3.37it/s, loss=0.9088]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.65it/s, loss=0.9088]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.65it/s, loss=0.7824]Training: 100%|██████████| 4/4 [00:00<00:00,  5.66it/s, loss=0.7824]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.34it/s]                                                         Epoch 8 Summary: Train Loss: 0.8524 | Val Loss: 1.7616 | Val Acc: 0.5582 | Val mIoU: 0.3126
+✨ New best mIoU: 0.3126. Saving model and prediction samples...
+
+--- Epoch 9/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.8246]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.74it/s, loss=0.8246]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.74it/s, loss=0.8203]Training:  50%|█████     | 2/4 [00:00<00:00,  3.27it/s, loss=0.8203]Training:  50%|█████     | 2/4 [00:00<00:00,  3.27it/s, loss=0.7940]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.54it/s, loss=0.7940]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.54it/s, loss=0.8151]Training: 100%|██████████| 4/4 [00:00<00:00,  5.55it/s, loss=0.8151]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.29it/s]                                                         Epoch 9 Summary: Train Loss: 0.8135 | Val Loss: 1.7303 | Val Acc: 0.5757 | Val mIoU: 0.2998
+
+--- Epoch 10/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.7923]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.84it/s, loss=0.7923]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.84it/s, loss=0.7754]Training:  50%|█████     | 2/4 [00:00<00:00,  3.42it/s, loss=0.7754]Training:  50%|█████     | 2/4 [00:00<00:00,  3.42it/s, loss=0.7613]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.70it/s, loss=0.7613]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.70it/s, loss=0.8336]Training: 100%|██████████| 4/4 [00:00<00:00,  5.70it/s, loss=0.8336]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.28it/s]                                                         Epoch 10 Summary: Train Loss: 0.7907 | Val Loss: 1.6962 | Val Acc: 0.5739 | Val mIoU: 0.3263
+✨ New best mIoU: 0.3263. Saving model and prediction samples...
+
+--- Epoch 11/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.7379]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.71it/s, loss=0.7379]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.71it/s, loss=0.8506]Training:  50%|█████     | 2/4 [00:00<00:00,  3.22it/s, loss=0.8506]Training:  50%|█████     | 2/4 [00:00<00:00,  3.22it/s, loss=0.7526]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.49it/s, loss=0.7526]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.49it/s, loss=0.7459]Training: 100%|██████████| 4/4 [00:00<00:00,  5.51it/s, loss=0.7459]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.34it/s]                                                         Epoch 11 Summary: Train Loss: 0.7717 | Val Loss: 1.6700 | Val Acc: 0.5869 | Val mIoU: 0.3692
+✨ New best mIoU: 0.3692. Saving model and prediction samples...
+
+--- Epoch 12/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.7922]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.99it/s, loss=0.7922]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.99it/s, loss=0.7691]Training:  50%|█████     | 2/4 [00:00<00:00,  3.62it/s, loss=0.7691]Training:  50%|█████     | 2/4 [00:00<00:00,  3.62it/s, loss=0.7235]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.88it/s, loss=0.7235]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.88it/s, loss=0.7502]Training: 100%|██████████| 4/4 [00:00<00:00,  5.86it/s, loss=0.7502]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.27it/s]                                                         Epoch 12 Summary: Train Loss: 0.7587 | Val Loss: 1.5797 | Val Acc: 0.5936 | Val mIoU: 0.3878
+✨ New best mIoU: 0.3878. Saving model and prediction samples...
+
+--- Epoch 13/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.7179]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.87it/s, loss=0.7179]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.87it/s, loss=0.7298]Training:  50%|█████     | 2/4 [00:00<00:00,  3.45it/s, loss=0.7298]Training:  50%|█████     | 2/4 [00:00<00:00,  3.45it/s, loss=0.7545]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.72it/s, loss=0.7545]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.72it/s, loss=0.7557]Training: 100%|██████████| 4/4 [00:00<00:00,  5.71it/s, loss=0.7557]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.44it/s]                                                         Epoch 13 Summary: Train Loss: 0.7395 | Val Loss: 1.4501 | Val Acc: 0.6148 | Val mIoU: 0.4094
+✨ New best mIoU: 0.4094. Saving model and prediction samples...
+
+--- Epoch 14/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.7983]Training:  25%|██▌       | 1/4 [00:00<00:01,  2.01it/s, loss=0.7983]Training:  25%|██▌       | 1/4 [00:00<00:01,  2.01it/s, loss=0.7124]Training:  50%|█████     | 2/4 [00:00<00:00,  3.63it/s, loss=0.7124]Training:  50%|█████     | 2/4 [00:00<00:00,  3.63it/s, loss=0.8565]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.91it/s, loss=0.8565]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.91it/s, loss=0.7836]Training: 100%|██████████| 4/4 [00:00<00:00,  5.87it/s, loss=0.7836]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.27it/s]                                                         Epoch 14 Summary: Train Loss: 0.7877 | Val Loss: 1.3186 | Val Acc: 0.6445 | Val mIoU: 0.4301
+✨ New best mIoU: 0.4301. Saving model and prediction samples...
+
+--- Epoch 15/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.7325]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.82it/s, loss=0.7325]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.82it/s, loss=0.7330]Training:  50%|█████     | 2/4 [00:00<00:00,  3.37it/s, loss=0.7330]Training:  50%|█████     | 2/4 [00:00<00:00,  3.37it/s, loss=0.7701]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.63it/s, loss=0.7701]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.63it/s, loss=0.7473]Training: 100%|██████████| 4/4 [00:00<00:00,  5.63it/s, loss=0.7473]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.33it/s]                                                         Epoch 15 Summary: Train Loss: 0.7457 | Val Loss: 1.2243 | Val Acc: 0.6744 | Val mIoU: 0.4505
+✨ New best mIoU: 0.4505. Saving model and prediction samples...
+
+--- Epoch 16/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.7265]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.91it/s, loss=0.7265]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.91it/s, loss=0.6922]Training:  50%|█████     | 2/4 [00:00<00:00,  3.50it/s, loss=0.6922]Training:  50%|█████     | 2/4 [00:00<00:00,  3.50it/s, loss=0.7145]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.77it/s, loss=0.7145]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.77it/s, loss=0.7563]Training: 100%|██████████| 4/4 [00:00<00:00,  5.75it/s, loss=0.7563]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.33it/s]                                                         Epoch 16 Summary: Train Loss: 0.7224 | Val Loss: 1.0695 | Val Acc: 0.7536 | Val mIoU: 0.5082
+✨ New best mIoU: 0.5082. Saving model and prediction samples...
+
+--- Epoch 17/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.7447]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.80it/s, loss=0.7447]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.80it/s, loss=0.7784]Training:  50%|█████     | 2/4 [00:00<00:00,  3.35it/s, loss=0.7784]Training:  50%|█████     | 2/4 [00:00<00:00,  3.35it/s, loss=0.7074]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.61it/s, loss=0.7074]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.61it/s, loss=0.8738]Training: 100%|██████████| 4/4 [00:00<00:00,  5.61it/s, loss=0.8738]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.31it/s]                                                         Epoch 17 Summary: Train Loss: 0.7761 | Val Loss: 1.0790 | Val Acc: 0.7685 | Val mIoU: 0.4930
+
+--- Epoch 18/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.8173]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.76it/s, loss=0.8173]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.76it/s, loss=0.7001]Training:  50%|█████     | 2/4 [00:00<00:00,  3.29it/s, loss=0.7001]Training:  50%|█████     | 2/4 [00:00<00:00,  3.29it/s, loss=0.7324]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.56it/s, loss=0.7324]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.56it/s, loss=0.7664]Training: 100%|██████████| 4/4 [00:00<00:00,  5.56it/s, loss=0.7664]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.25it/s]                                                         Epoch 18 Summary: Train Loss: 0.7540 | Val Loss: 1.0764 | Val Acc: 0.7386 | Val mIoU: 0.4856
+
+--- Epoch 19/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.8195]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.93it/s, loss=0.8195]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.93it/s, loss=0.7583]Training:  50%|█████     | 2/4 [00:00<00:00,  3.53it/s, loss=0.7583]Training:  50%|█████     | 2/4 [00:00<00:00,  3.53it/s, loss=0.7472]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.80it/s, loss=0.7472]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.80it/s, loss=0.6824]Training: 100%|██████████| 4/4 [00:00<00:00,  5.78it/s, loss=0.6824]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.36it/s]                                                         Epoch 19 Summary: Train Loss: 0.7519 | Val Loss: 1.0804 | Val Acc: 0.7117 | Val mIoU: 0.4564
+
+--- Epoch 20/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.6873]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.78it/s, loss=0.6873]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.78it/s, loss=0.8806]Training:  50%|█████     | 2/4 [00:00<00:00,  3.32it/s, loss=0.8806]Training:  50%|█████     | 2/4 [00:00<00:00,  3.32it/s, loss=0.6778]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.58it/s, loss=0.6778]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.58it/s, loss=0.9408]Training: 100%|██████████| 4/4 [00:00<00:00,  5.58it/s, loss=0.9408]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.37it/s]                                                         Epoch 20 Summary: Train Loss: 0.7966 | Val Loss: 1.0487 | Val Acc: 0.7609 | Val mIoU: 0.4731
+
+--- Epoch 21/50 ---
+Training:   0%|          | 0/4 [00:00<?, ?it/s]Training:   0%|          | 0/4 [00:00<?, ?it/s, loss=0.9183]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.93it/s, loss=0.9183]Training:  25%|██▌       | 1/4 [00:00<00:01,  1.93it/s, loss=0.6716]Training:  50%|█████     | 2/4 [00:00<00:00,  3.52it/s, loss=0.6716]Training:  50%|█████     | 2/4 [00:00<00:00,  3.52it/s, loss=0.7102]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.79it/s, loss=0.7102]Training:  75%|███████▌  | 3/4 [00:00<00:00,  4.79it/s, loss=0.8571]Training: 100%|██████████| 4/4 [00:00<00:00,  5.98it/s, loss=0.8571]                                                                    Validating:   0%|          | 0/1 [00:00<?, ?it/s]Validating: 100%|██████████| 1/1 [00:00<00:00,  2.36it/s]                                                         Epoch 21 Summary: Train Loss: 0.7893 | Val Loss: 1.0856 | Val Acc: 0.7794 | Val mIoU: 0.4879
+🛑 Early stopping triggered after 5 epochs without improvement.
+
+4. Final Evaluation and Analysis...
+   Loading best model for detailed report...
+
+--- Benchmarking Performance ---
+Input tensor shape for benchmark: torch.Size([8, 25, 224, 224])
+Running 50 warmup iterations...
+Running 200 benchmark iterations...
+✓ Benchmark complete.
+  - Average Latency per Batch: 55.98 ms
+  - Frames Per Second (FPS): 142.91
+Final Evaluation:   0%|          | 0/1 [00:00<?, ?it/s]Final Evaluation: 100%|██████████| 1/1 [00:00<00:00,  2.25it/s]Final Evaluation: 100%|██████████| 1/1 [00:00<00:00,  2.01it/s]
+
+--- Final Training Report ---
+
+Run Name: GeminiUNet_Run_1
+Full Path: training_runs/GeminiUNet_Run_1_20250912_121002
+Training Duration: 0:03:15
+Completed Epochs: 21
+Best Validation mIoU: 0.5082
+
+--- Performance Benchmark ---
+- FPS: 142.91
+- Latency: 55.98 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.7995, Dice = 0.8886
+- RoadLine                 : IoU = 0.5162, Dice = 0.6809
+- Vegetation               : IoU = 0.1073, Dice = 0.1937
+- Sky                      : IoU = 0.5867, Dice = 0.7395
+- NoDrivable               : IoU = 0.5322, Dice = 0.6947
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score     support
+Road             0.8421  0.9404    0.8886 168660.0000
+RoadLine         0.8297  0.5774    0.6809  18701.0000
+Vegetation       0.8413  0.1095    0.1937  43491.0000
+Sky              0.9744  0.5959    0.7395  44820.0000
+NoDrivable       0.6089  0.8087    0.6947 125736.0000
+accuracy         0.7537  0.7537    0.7537      0.7537
+macro avg        0.8193  0.6064    0.6395 401408.0000
+weighted avg     0.7832  0.7537    0.7263 401408.0000
+✓ Metrics plot saved to training_runs/GeminiUNet_Run_1_20250912_121002/training_metrics.png
+✓ Confusion matrix saved to training_runs/GeminiUNet_Run_1_20250912_121002/confusion_matrix.png
+✓ Per-class metrics plot saved to training_runs/GeminiUNet_Run_1_20250912_121002/per_class_metrics.png
+
+✅ Analysis complete. All results saved to 'training_runs/GeminiUNet_Run_1_20250912_121002' directory.
+Released lock: training_runs/training.lock

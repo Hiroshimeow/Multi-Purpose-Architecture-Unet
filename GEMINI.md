@@ -230,3 +230,36 @@ The next logical step is to explore if using slightly more principal components 
     1.  Generate a new dataset `Image_dataset_pca_5band` using 5 principal components.
     2.  Create a new config file `configs/run12_pca_5band_config.yaml`.
     3.  Run the training and evaluate the results.
+
+## Quy trình Huấn luyện Nền và Theo dõi
+
+Để tối ưu hóa thời gian và tránh hiển thị quá nhiều log không cần thiết, quy trình huấn luyện các thử nghiệm dài hạn sẽ được thực hiện trong nền.
+
+1.  **Chạy Thử 1 Epoch:**
+    *   **Mục đích:** Nhanh chóng xác thực tính đúng đắn của code, cấu hình và dữ liệu.
+    *   **Lệnh:** Chạy script huấn luyện với tham số `--epochs 1`.
+    *   **Kiểm tra:** Nếu lần chạy thử thành công, tiến hành bước tiếp theo. Nếu có lỗi, dừng lại và sửa lỗi.
+
+2.  **Chạy Huấn luyện Nền:**
+    *   **Mục đích:** Thực hiện quá trình huấn luyện đầy đủ mà không làm gián đoạn phiên làm việc của người dùng.
+    *   **Lệnh:** Sử dụng lệnh `... > ten_file.log 2>&1 &` để chuyển hướng toàn bộ output (cả stdout và stderr) vào một file log và chạy tiến trình trong nền.
+    *   **Lưu ý:** Ghi lại PID của tiến trình được trả về.
+
+3.  **Theo dõi Tiến độ:**
+    *   **Cơ chế:** Thay vì liên tục hỏi `ps`, tôi sẽ sử dụng cơ chế so sánh file `history.csv` để kiểm tra tiến độ một cách hiệu quả hơn.
+    *   **Tần suất:** Đợi **5 phút** (`sleep 300`) giữa mỗi lần kiểm tra.
+    *   **Hành động:**
+        1.  Đọc nội dung file `training_runs/RUN_NAME/history.csv`.
+        2.  Đợi 5 phút.
+        3.  Đọc lại file `history.csv`.
+        4.  Nếu nội dung file không thay đổi so với lần đọc trước, có thể kết luận rằng quá trình huấn luyện đã dừng (hoàn thành hoặc gặp lỗi).
+
+4.  **Báo cáo Kết quả:**
+    *   Khi xác định quá trình huấn luyện đã kết thúc, tôi sẽ tự động:
+        1.  Đọc file log chính (`ten_file.log`) để kiểm tra có lỗi nào xảy ra không.
+        2.  Tìm đến thư mục `training_runs/RUN_NAME` mới nhất.
+        3.  Đọc và phân tích các file kết quả quan trọng:
+            *   `final_metrics.json`: Để lấy mIoU tốt nhất, FPS, và Latency.
+            *   `classification_report.txt`: Để xem chi tiết IoU và Dice score của từng lớp.
+            *   `history.csv`: Để xem lại quá trình hội tụ của mô hình.
+    *   Cuối cùng, tôi sẽ tóm tắt và so sánh kết quả với các thử nghiệm trước đó, sau đó đề xuất bước tiếp theo.

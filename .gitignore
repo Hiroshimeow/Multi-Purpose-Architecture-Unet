@@ -1,6 +1,37 @@
-# Datasets
+# Ignore everything by default
+*
+
+# --- Allowlist ---
+# Allow directories to be tracked, so files inside them can be un-ignored
+!*/
+
+# Allow specific file extensions
+!*.py
+!*.txt
+!*.log
+!*.csv
+!*.yaml
+!*.md
+
+# Allow specific files without extensions if needed (e.g., Dockerfile)
+# !Dockerfile
+
+# --- Blocklist ---
+# Re-ignore specific directories that should never be tracked
+.git/
+.gemini/
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+
+# Re-ignore dataset and run directories
+/training_runs/
+/Image_dataset/
 /Image_dataset_3band/
 /Image_dataset_pca_3band/
+/dataset_40_for_test/
+/run_full_manguon/
 
-# Logs
-*.log
+# Don't ignore the .gitignore file itself
+!.gitignore
