@@ -132,3 +132,33 @@ def plot_segmentation_results(samples: list, class_names: list, output_dir: Path
         plt.savefig(save_path, bbox_inches='tight')
         plt.close(fig)
     print(f"✓ Saved {len(samples)} comparison plots to '{output_dir}'")
+
+def plot_comparison_metrics(comparison_df: pd.DataFrame, output_dir: Path):
+    output_dir.mkdir(parents=True, exist_ok=True)
+    run_names = comparison_df["Run Name"].apply(lambda x: x.split('_')[-2] if '_' in x else x) # Extract short name
+
+    metrics_to_plot = {
+        "Best mIoU": "Best mIoU Comparison",
+        "FPS": "FPS Comparison",
+        "Total Epochs": "Total Epochs Comparison",
+        "Batch Size": "Batch Size Comparison",
+        "LR": "Learning Rate Comparison"
+    }
+
+    for metric, title in metrics_to_plot.items():
+        if metric in comparison_df.columns:
+            plt.figure(figsize=(12, 7))
+            sns.barplot(x=run_names, y=comparison_df[metric], palette="viridis")
+            plt.title(title)
+            plt.ylabel(metric)
+            plt.xlabel("Run Name")
+            plt.xticks(rotation=45, ha="right")
+            plt.tight_layout()
+            plt.savefig(output_dir / f"{metric.replace(' ', '_').lower()}_comparison.png")
+            plt.close()
+            filename = f"{metric.replace(' ', '_').lower()}_comparison.png"
+            print(f"✓ Comparison plot for '{metric}' saved to {output_dir / filename}")
+        else:
+            print(f"Warning: Metric '{metric}' not found in comparison data. Skipping plot.")
+
+    print(f"✓ All comparison plots saved to '{output_dir}'")

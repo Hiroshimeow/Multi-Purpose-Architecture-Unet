@@ -25,25 +25,7 @@ from src.losses import get_loss
 from src.experiment_manager import ExperimentManager
 from src.trainer import Trainer
 
-def acquire_lock(lock_file_path: Path):
-    lock_file = lock_file_path
-    while True:
-        try:
-            fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            os.close(fd)
-            print(f"Acquired lock: {lock_file}")
-            return
-        except FileExistsError:
-            print("Another process is initializing. Waiting 30 seconds...")
-            time.sleep(30)
 
-def release_lock(lock_file_path: Path):
-    try:
-        if lock_file_path.exists():
-            os.remove(lock_file_path)
-            print(f"Released lock: {lock_file_path}")
-    except OSError as e:
-        print(f"Error releasing lock file: {e}")
 
 def calculate_zscore_stats(file_paths: list, in_channels: int):
     from torch.utils.data import Dataset
@@ -216,13 +198,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    if Path(args.config).exists():
-        config_for_lock = yaml.safe_load(open(args.config, 'r'))
-        lock_file = Path(config_for_lock['base_output_dir']) / 'training.lock'
-        acquire_lock(lock_file)
-        try:
-            main(args)
-        finally:
-            release_lock(lock_file)
-    else:
-        print(f"Error: Config file not found at {args.config}")
+    main(args)

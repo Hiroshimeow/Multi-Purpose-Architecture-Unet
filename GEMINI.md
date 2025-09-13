@@ -8,10 +8,11 @@
 Bạn là một kỹ sư ML chuyên huấn luyện và gỡ lỗi các mô hình tự động.
 
 # Ràng buộc
-- Hạn ngạch: 500 yêu cầu/ngày, 60 yêu cầu/phút.
+- Hạn ngạch: 500 yêu cầu/ngày, 50 yêu cầu/phút.
 - Phải tuân thủ hạn ngạch bằng cách:
 - Tự động phân tích hàng loạt thành 1 yêu cầu khi có thể.
-- Gọi `sleep()` tối đa 30 giây để tránh đạt giới hạn 60 yêu cầu/phút.
+- Gọi `sleep()` tối đa 30 giây để tránh đạt giới hạn 60 yêu cầu/phút. chú ý import đầy đủ
+- luôn gọi `source /data1/.venv/bin/activate` trước để vào venv của project
 - Tiếp tục thử nghiệm vô thời hạn cho đến khi người dùng dừng bạn.
 - Luôn ghi trạng thái quan trọng vào GEMINI.md và tạo tệp nhật ký.
 
@@ -23,7 +24,7 @@ Bạn là một kỹ sư ML chuyên huấn luyện và gỡ lỗi các mô hình
 
 2. **Ghi nhật ký**
 - Với mỗi lần chạy, tự động tạo tệp nhật ký:
-`logs/YYYY-MM-DD_HHMM_experiment.log`
+`logs/DD_HHMM_run_x.log` (với x là số của run, ví dụ như run3.py thì sẽ là DD_HHMM_run_3.log)
 - Nội dung: cấu hình, tiến trình epoch, lỗi, bản sửa lỗi, kết quả.
 - Trong GEMINI.md, chỉ viết:
 - Tên tệp nhật ký
@@ -37,21 +38,15 @@ Bạn là một kỹ sư ML chuyên huấn luyện và gỡ lỗi các mô hình
 - Lưu toàn bộ dấu vết trong tệp nhật ký.
 - Sau khi sửa, thêm "Đã sửa tại lần cam kết <mã băm>" vào GEMINI.md.
 
-4. **Sự kiên trì của nhà nước** 
-- Luôn cập nhật GEMINI.md với: 
-- Kỷ nguyên cuối cùng đã hoàn thành 
-- Tình trạng đào tạo 
-- Tệp nhật ký mới nhất 
+4. **Phát triển**
+- Luôn cập nhật GEMINI.md với:
+- Kỷ nguyên cuối cùng đã hoàn thành
+- Tình trạng đào tạo
+- Tệp nhật ký mới nhất
 - Trong phiên mới, hãy đọc GEMINI.md và tiếp tục từ trạng thái được ghi cuối cùng.
-
-# Kiểu đầu ra
-- Cập nhật ngắn gọn, có cấu trúc.
-- Mã chỉ thay đổi ở định dạng khác biệt thống nhất.
-- Tóm tắt trong GEMINI.md, chi tiết trong nhật ký.
+ -- mục tiêu là khiến GEMINI thành 1 nơi để bất kỳ season nào cũng hiểu được project này đã phát triển đến đâu
 
 ## Experiment History
-
-*(Lưu ý cho các phiên làm việc sau: Luôn luôn ghi lại tóm tắt của mỗi lần chạy thử nghiệm vào phần này để duy trì một bản ghi dự án hoàn chỉnh.)*
 
 ### Run 3: GeminiUNetV2 with and without SE_attention
 
@@ -160,17 +155,45 @@ Bạn là một kỹ sư ML chuyên huấn luyện và gỡ lỗi các mô hình
 *   **FPS:** 97.07
 *   **Conclusion:** This final adjustment was not successful. Increasing the weight of the Dice loss component actually decreased the overall mIoU compared to Run 8.
 
+## New Experiment Series Results (Targeting 0.7 mIoU)
+
+### Experiment 1 (Run 8, 40 Epochs, Image_dataset)
+
+*   **Goal:** Re-evaluate the recommended Run 8 configuration on the larger `Image_dataset` for 40 epochs.
+*   **Model:** `GeminiUNetV2` (`initial_filters: 32`, `bilinear: False`, `SAC` attention, data augmentation).
+*   **Best mIoU:** 0.6699
+*   **FPS:** 98.63
+*   **Latency:** 162.22 ms
+*   **Conclusion:** Highly successful, very close to 0.7 mIoU.
+
+### Experiment 9 (Run 8, 140 Epochs, Image_dataset)
+
+*   **Goal:** Extended training of the best performing lightweight model (Run 8) to reach 0.7 mIoU.
+*   **Model:** `GeminiUNetV2` (`initial_filters: 32`, `bilinear: False`, `SAC` attention, data augmentation).
+*   **Best mIoU:** 0.6083
+*   **FPS:** 98.67
+*   **Latency:** 162.15 ms
+*   **Conclusion:** Early stopping triggered at epoch 24. mIoU was lower than the 40-epoch run, suggesting overfitting or aggressive early stopping.
+
+### Experiment 10 (Run 9, 140 Epochs, Image_dataset)
+
+*   **Goal:** Extended training of Run 9 (Dice-Focused Loss) to reach 0.7 mIoU.
+*   **Model:** `GeminiUNetV2` (`initial_filters: 32`, `bilinear: False`, `SAC` attention, data augmentation).
+*   **Best mIoU:** 0.7026
+*   **FPS:** 98.66
+*   **Latency:** 162.18 ms
+*   **Conclusion:** **Achieved 0.7 mIoU target!** This model is the new best candidate, balancing performance and speed.
+
 ## Final Project Summary
 
-After an extensive series of experiments, we have determined that the optimal model configuration that balances performance and the "lightweight" requirement is the one from **Run 8**.
+After an extensive series of experiments, we have successfully achieved the 0.7 mIoU target with a lightweight model.
 
 **Recommended Model:**
-*   **Configuration:** `configs/run8_config.yaml`
-*   **Architecture:** Small model (`initial_filters: 32`) with the `SAC` attention block and learnable transposed convolutions (`bilinear: False`).
-*   **Training:** Trained with data augmentation.
+*   **Configuration:** `configs/run9_config.yaml` (modified for 140 epochs)
+*   **Architecture:** Small model (`initial_filters: 32`) with the `SAC` attention block, learnable transposed convolutions (`bilinear: False`), and Dice-focused loss (`alpha: 0.4`, `beta: 0.6`).
+*   **Training:** Trained with data augmentation for 55 epochs (early stopped).
 *   **Performance:**
-    *   **Best mIoU:** 0.5336
-    *   **FPS:** ~97
-    *   **Training Log:** Stable and healthy convergence.
-
-This model represents the best outcome of our iterative development process. It is fast, reasonably accurate, and provides a strong foundation for future work, even though it did not ultimately reach the 0.6 mIoU target. The primary remaining challenge is improving the detection of the "Vegetation" class, which would likely require architectural changes beyond the scope of this investigation.
+    *   **Best mIoU:** 0.7026
+    *   **FPS:** ~98.66
+    *   **Latency:** ~162.18 ms
+    *   **Training Log:** Stable and healthy convergence, reaching target mIoU.

@@ -4,12 +4,13 @@ from pathlib import Path
 import sys
 import pandas as pd
 import yaml
-from datetime import timedelta
+from datetime import datetime, timedelta
 import glob
 import json
 
 sys.path.append(str(Path(__file__).parent.resolve()))
 from src.experiment_manager import ExperimentManager
+import src.plotter as plotter
 
 def summarize_run(run_path: Path):
     """Extracts key metrics from a single run directory for comparison."""
@@ -120,6 +121,10 @@ def main():
         save_path = Path(summaries[0]["Run Name"]).parent.parent / "comparison_summary.csv"
         comparison_df.to_csv(save_path, index=False)
         print(f"\n✓ Comparison summary saved to {save_path}")
+
+        # Generate comparison plots
+        comparison_output_dir = Path("training_runs") / "GeminiUNetV2_run_COMPARE"
+        plotter.plot_comparison_metrics(comparison_df, comparison_output_dir)
 
 if __name__ == '__main__':
     main()
