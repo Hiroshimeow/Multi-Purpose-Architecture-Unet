@@ -1,17 +1,6 @@
-# Bỏ qua tất cả
-*
+# Datasets
+/Image_dataset_3band/
+/Image_dataset_pca_3band/
 
-# Giữ lại .gitignore
-!.gitignore
-
-# Giữ lại các loại file cần thiết trong tất cả folder
-!**/*.py
-!**/*.ipynb
-!**/*.md
-!**/*.yaml
-!**/*.yml
-!**/*.txt
-!**/*.csv
-
-.gemini/
-gha-creds-*.json
+# Logs
+*.log

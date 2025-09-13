@@ -23,15 +23,9 @@ Bạn là một kỹ sư ML chuyên huấn luyện và gỡ lỗi các mô hình
 - Tự động tiếp tục cho đến khi người dùng gửi tín hiệu dừng.
 
 2. **Ghi nhật ký**
-- Với mỗi lần chạy, tự động tạo tệp nhật ký:
-`logs/DD_HHMM_run_x.log` (với x là số của run, ví dụ như run3.py thì sẽ là DD_HHMM_run_3.log)
+- Tham khảo run_log.md để cập nhật thông tin log:
 - Nội dung: cấu hình, tiến trình epoch, lỗi, bản sửa lỗi, kết quả.
-- Trong GEMINI.md, chỉ viết:
-- Tên tệp nhật ký
-- Mã băm cam kết
-- Số liệu tốt nhất
-- Trạng thái hiện tại (đang chạy / tạm dừng / hoàn thành)
-- Các mục nhập lỗi thời phải được cắt tỉa.
+- Trong GEMINI.md, cũng viết tương tự:
 
 3. **Xử lý lỗi**
 - Tóm tắt lỗi trong ≤5 dòng trong GEMINI.md.
@@ -197,3 +191,42 @@ After an extensive series of experiments, we have successfully achieved the 0.7 
     *   **FPS:** ~98.66
     *   **Latency:** ~162.18 ms
     *   **Training Log:** Stable and healthy convergence, reaching target mIoU.
+
+## Dimensionality Reduction Experiments (Branch: `run2_band_Neural-Network-based_Dimensionality-Reduction`)
+
+### Experiment 1: Autoencoder (3-band)
+
+*   **Goal:** Reduce dimensionality from 25 to 3 bands using a convolutional autoencoder and evaluate the impact on segmentation performance.
+*   **Method:**
+    *   Trained a convolutional autoencoder (`autoencoder.py`) for 20 epochs to learn a 3-dimensional representation of the 25-band data.
+    *   Used the trained encoder to generate a new dataset (`Image_dataset_3band`).
+    *   Trained the baseline UNet model (`run9.py` config) on this new 3-band dataset.
+*   **Results:**
+    *   **Best mIoU:** 0.4765
+    *   **FPS:** ~289.86
+*   **Conclusion:** **Failure.** The dimensionality reduction via autoencoder resulted in a massive drop in accuracy (from 0.7026 to 0.4765). The compressed 3-band representation lost too much critical information, especially for complex classes like "RoadLine" (IoU: 0.0175).
+
+### Experiment 2: PCA (3-band)
+
+*   **Goal:** Reduce dimensionality from 25 to 3 bands using Principal Component Analysis (PCA) and compare with the baseline and autoencoder results.
+*   **Method:**
+    *   Used `scikit-learn`'s PCA to fit and transform the dataset into its first 3 principal components (`generate_pca_dataset.py`).
+    *   Created a new dataset `Image_dataset_pca_3band`.
+    *   Trained the baseline UNet model (`run11_pca_3band_config.yaml`) on the 3-band PCA data.
+*   **Results:**
+    *   **Best mIoU:** **0.7030**
+    *   **FPS:** **~290.12**
+*   **Conclusion:** **Highly Successful.** PCA-based reduction achieved a mIoU score nearly identical to the original 25-band model (0.7030 vs. 0.7026) while increasing the FPS by almost 3x. This demonstrates that PCA is a far more effective method for dimensionality reduction in this context, preserving essential information while drastically improving computational performance.
+
+### Current Status & Next Steps
+
+The PCA-based model from Experiment 2 is the new best candidate, offering the same accuracy as the original model with a significant speed advantage.
+
+The next logical step is to explore if using slightly more principal components can push the accuracy even higher without sacrificing too much performance.
+
+**Next Action:**
+*   **Experiment:** PCA with 5 components.
+*   **Plan:**
+    1.  Generate a new dataset `Image_dataset_pca_5band` using 5 principal components.
+    2.  Create a new config file `configs/run12_pca_5band_config.yaml`.
+    3.  Run the training and evaluate the results.
