@@ -12,3 +12,6 @@
 !**/*.yml
 !**/*.txt
 !**/*.csv
+
+.gemini/
+gha-creds-*.json
