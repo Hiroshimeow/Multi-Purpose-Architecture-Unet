@@ -232,5 +232,10 @@ class Trainer:
         flat_preds = np.concatenate([p.flatten() for p in all_preds])
         flat_trues = np.concatenate([t.flatten() for t in all_trues])
         
+        # Calculate efficiency
+        gflops = performance_metrics.get('gflops', 0)
+        efficiency = self.best_miou / gflops if gflops > 0 else 0
+        performance_metrics['efficiency'] = efficiency
+
         self.manager.generate_final_report(self.best_miou, flat_preds, flat_trues, self.config, performance_metrics)
         print(f"\n✅ Analysis complete. All results saved to '{self.manager.output_dir}' directory.")

@@ -1,4 +1,5 @@
 # run.py
+# Hợp nhất từ các file run*.py để tạo ra một script huấn luyện duy nhất, linh hoạt.
 import argparse
 import yaml
 from pathlib import Path
@@ -15,9 +16,9 @@ import random
 import time
 import h5py
 import scipy.io as io
+
 from src.models import get_model
 from src.datasets import TiledHyperspectralDataset
-# FIX: Import get_loss thay vì các class cụ thể
 from src.losses import get_loss
 from src.experiment_manager import ExperimentManager
 from src.trainer import Trainer
@@ -25,13 +26,10 @@ from src.trainer import Trainer
 
 def calculate_zscore_stats(file_paths: list, in_channels: int):
     """
-    Calculates mean and standard deviation across the training set for Z-score normalization.
-    This is crucial for ensuring the model receives consistently scaled data.
+    Tính toán giá trị trung bình và độ lệch chuẩn trên tập huấn luyện để chuẩn hóa Z-score.
     """
-    # FIX: Import các thư viện cần thiết vào scope của hàm
     from torch.utils.data import Dataset
     import torch
-    # Không cần import h5py và io ở đây nữa vì chúng đã có ở scope toàn cục
 
     print("Calculating Z-score statistics on the training set...")
     
@@ -41,24 +39,19 @@ def calculate_zscore_stats(file_paths: list, in_channels: int):
             self.channels = channels
         def __len__(self): return len(self.files)
         def __getitem__(self, idx):
-            # Logic đọc file đã được cải thiện
             try:
+                # Thử đọc bằng h5py trước
                 with h5py.File(self.files[idx], 'r') as f:
                     data_keys = list(f.keys())
                     if not data_keys: return None
                     cube = np.array(f[data_keys[0]]).astype(np.float32)
-                    if cube.shape[0] == self.channels and cube.ndim == 3:
-                        cube = np.transpose(cube, (1, 2, 0))
-                    return torch.from_numpy(cube)
-            except OSError:
+            except (OSError, IOError):
+                # Nếu thất bại, thử đọc bằng scipy.io
                 try:
                     mat_data = io.loadmat(self.files[idx])
                     data_keys = [k for k in mat_data.keys() if not k.startswith('__')]
                     if not data_keys: return None
                     cube = mat_data[data_keys[0]].astype(np.float32)
-                    if cube.shape[0] == self.channels and cube.ndim == 3:
-                        cube = np.transpose(cube, (1, 2, 0))
-                    return torch.from_numpy(cube)
                 except Exception as e:
                     print(f"Warning: Could not load {self.files[idx]} with scipy. Error: {e}")
                     return None
@@ -66,34 +59,42 @@ def calculate_zscore_stats(file_paths: list, in_channels: int):
                 print(f"Warning: An unexpected error occurred with {self.files[idx]}. Error: {e}")
                 return None
 
+            # Chuẩn hóa chiều của cube về (C, H, W) nếu cần
+            if cube.ndim == 3 and cube.shape[2] == self.channels and cube.shape[0] != self.channels:
+                 cube = np.transpose(cube, (2, 0, 1))
+            
+            # Kiểm tra lại lần cuối
+            if cube.shape[0] != self.channels:
+                # print(f"Warning: Channel mismatch for {self.files[idx]}. Expected {self.channels}, got {cube.shape[0]}. Skipping.")
+                return None
+
+            return torch.from_numpy(cube)
+
+
     dataset = StatsDataset(file_paths, in_channels)
     
-    # FIX: Thêm collate_fn để xử lý các giá trị None một cách an toàn
     def collate_fn_skip_none(batch):
-        # Lọc ra các item không phải là None
         batch = [item for item in batch if item is not None]
         if not batch:
-            return None # Trả về None nếu cả batch đều lỗi
-        # Sử dụng collate mặc định cho batch đã được lọc
+            return None
         return torch.utils.data.default_collate(batch)
 
-    loader = DataLoader(dataset, batch_size=4, num_workers=platform.system() != 'Windows' and 4 or 0, shuffle=False, collate_fn=collate_fn_skip_none)
+    # Tăng batch_size và num_workers để tính toán nhanh hơn
+    loader = DataLoader(dataset, batch_size=16, num_workers=min(os.cpu_count(), 8), shuffle=False, collate_fn=collate_fn_skip_none)
     
     count = 0
     mean = torch.zeros(in_channels)
     m2 = torch.zeros(in_channels)
 
     for cube_batch in tqdm(loader, desc="Calculating Stats"):
-        # Nếu collate_fn trả về None (cả batch lỗi), bỏ qua
         if cube_batch is None: continue
         
-        # DataLoader trả về một batch tensor, không cần duyệt qua từng cube
         pixels = cube_batch.view(-1, in_channels)
         n = len(pixels)
         if n == 0: continue
         
         batch_mean = pixels.mean(dim=0)
-        batch_var = pixels.var(dim=0, unbiased=False) # Population variance for the batch
+        batch_var = pixels.var(dim=0, unbiased=False)
         
         delta = batch_mean - mean
         mean += delta * n / (count + n)
@@ -104,10 +105,8 @@ def calculate_zscore_stats(file_paths: list, in_channels: int):
         print("Warning: Not enough data to calculate standard deviation. Returning std=1.")
         std = torch.ones(in_channels)
     else:
-        # Population variance is m2 / count
         std = torch.sqrt(m2 / count)
     
-    # Thêm một epsilon nhỏ để tránh std = 0
     std[std == 0] = 1e-8
     
     print("✓ Z-score stats calculated.")
@@ -117,15 +116,34 @@ def main(args):
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     
+    # Ghi đè cấu hình từ tham số dòng lệnh
     if args.run_name: config['run_name'] = args.run_name
+    if args.model_name: config['model']['name'] = args.model_name # <--- LOGIC MỚI
     if args.lr: config['optimizer']['params']['lr'] = args.lr
     if args.batch_size: config['training']['batch_size'] = args.batch_size
     if args.epochs: config['training']['num_epochs'] = args.epochs
+    
+    # Xử lý tham số --sea (SE Attention)
+    if args.sea is not None:
+        if 'sac_params' in config['model']['params']:
+            config['model']['params']['sac_params']['use_sea'] = args.sea
+            print(f"✓ Set SE Attention (SEA) in SAC module to: {args.sea}")
+        else:
+            print("Warning: --sea flag has no effect as model does not have 'sac_params'.")
+            
+    # Xử lý tham số --channels
     if args.channels: 
+        # Ưu tiên cập nhật 'selected_channels' nếu có, vì nó an toàn hơn
         if 'selected_channels' in config['model']['params']:
             config['model']['params']['selected_channels'] = args.channels
+            print(f"✓ Set selected_channels to: {args.channels}")
+        # Nếu không, cập nhật 'in_channels'
+        elif 'in_channels' in config['model']['params']:
+             config['model']['params']['in_channels'] = args.channels
+             print(f"✓ Set in_channels to: {args.channels}")
         else:
-            print("Warning: '--channels' override is only supported for models with 'selected_channels' param (e.g., HybridUNet).")
+            print("Warning: '--channels' override failed. Model params lack 'selected_channels' or 'in_channels'.")
+
 
     run_path, is_new_run = ExperimentManager.setup_run_directory(
         base_output_dir=config['base_output_dir'],
@@ -138,23 +156,29 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data_cfg = config['data']
     data_dir = Path(data_cfg['dir'])
-    cube_dir = data_dir / "cubes_fl32"
     
-    all_files = sorted(glob.glob(os.path.join(cube_dir, "*.mat")))
+    # Cho phép chỉ định thư mục con chứa dữ liệu linh hoạt hơn
+    cube_dir_name = data_cfg.get('cube_dir_name', 'cubes_fl32')
+    cube_dir = data_dir / cube_dir_name
+    
+    all_files = sorted(glob.glob(os.path.join(cube_dir, f"*.{data_cfg.get('file_extension', 'mat')}")))
     if not all_files:
-        raise FileNotFoundError(f"No .mat files found in {cube_dir}.")
+        raise FileNotFoundError(f"No .{data_cfg.get('file_extension', 'mat')} files found in {cube_dir}.")
 
-    random.seed(42)
+    random.seed(data_cfg.get('seed', 42))
     random.shuffle(all_files)
     
-    split_idx = int(0.8 * len(all_files))
+    # Tách tập dữ liệu train/val
+    val_split = data_cfg.get('val_split', 0.2)
+    split_idx = int((1.0 - val_split) * len(all_files))
     train_files, val_files = all_files[:split_idx], all_files[split_idx:]
     
     stats = None
     if config['data'].get('normalization') == 'z-score':
-        # FIX: Sửa lại logic get in_channels cho an toàn
-        c_param = 'selected_channels' if 'selected_channels' in config['model']['params'] else 'in_channels'
-        in_channels = config['model']['params'][c_param]
+        # Lấy số kênh đầu vào một cách an toàn
+        in_channels = config['model']['params'].get('in_channels', config['model']['params'].get('selected_channels'))
+        if in_channels is None:
+             raise ValueError("Cannot determine number of input channels for Z-score calculation.")
         stats = calculate_zscore_stats(train_files, in_channels)
     
     train_dataset = TiledHyperspectralDataset(file_paths=train_files, config=config, augment=True, stats=stats)
@@ -171,12 +195,10 @@ def main(args):
     model = get_model(config['model']['name'], config['model']['params']).to(device)
     
     print("   Calculating class weights from training patches...")
-    # NOTE: Dữ liệu từ dataset giờ chỉ là (ảnh, mask)
     all_masks_pixels = np.concatenate([p[1].flatten() for p in tqdm(train_dataset.patches, desc="Sampling weights")])
     class_weights = compute_class_weight('balanced', classes=np.arange(config['model']['params']['num_classes']), y=all_masks_pixels)
     print(f"✓ Calculated class weights: {class_weights}")
     
-    # FIX: Sử dụng loss factory để khởi tạo criterion
     criterion = get_loss(
         name=config['loss']['name'],
         params=config['loss'].get('params', {}),
@@ -186,10 +208,13 @@ def main(args):
     
     optimizer = getattr(optim, config['optimizer']['name'])(model.parameters(), **config['optimizer']['params'])
     
-    scheduler_params = config['scheduler']['params'].copy() # Dùng copy để tránh pop làm thay đổi dict gốc
-    if config['scheduler']['name'] == 'CosineAnnealingLR':
-        scheduler_params['T_max'] = config['training']['num_epochs'] + scheduler_params.pop('T_max_epochs_offset', 0)
-    scheduler = getattr(optim.lr_scheduler, config['scheduler']['name'])(optimizer, **scheduler_params)
+    # Cấu hình scheduler linh hoạt hơn
+    scheduler_params = config['scheduler'].get('params', {}).copy()
+    scheduler_name = config['scheduler']['name']
+    if scheduler_name == 'CosineAnnealingLR':
+        scheduler_params['T_max'] = config['training']['num_epochs']
+    
+    scheduler = getattr(optim.lr_scheduler, scheduler_name)(optimizer, **scheduler_params)
 
     trainer = Trainer(
         model=model, optimizer=optimizer, scheduler=scheduler, criterion=criterion,
@@ -200,16 +225,18 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="Run a Segmentation Model Training Experiment.",
+        description="Unified Training Script for Segmentation Models.",
         formatter_class=argparse.RawTextHelpFormatter
     )
-    parser.add_argument('--config', type=str, default='configs/unet_paper_replica.yaml', help='Path to the base configuration file.')
+    parser.add_argument('--config', type=str, default='configs/test_config.yaml', help='Path to the base configuration file.')
     parser.add_argument('--run_name', type=str, default=None, help='Override the run name from the config file.')
+    parser.add_argument('--model_name', type=str, default=None, help='Override the model name from the config file.')
     parser.add_argument('--resume_path', type=str, default=None, help='Path to a specific run directory to resume.')
-    parser.add_argument('--channels', type=int, default=None, help='Override number of selected channels.')
+    parser.add_argument('--channels', type=int, default=None, help='Override number of input/selected channels.')
     parser.add_argument('--lr', type=float, default=None, help='Override learning rate.')
     parser.add_argument('--batch_size', type=int, default=None, help='Override batch size.')
     parser.add_argument('--epochs', type=int, default=None, help='Override number of training epochs.')
+    parser.add_argument('--sea', type=lambda x: (str(x).lower() == 'true'), default=None, help='Enable or disable SE Attention in SAC module (True/False).')
     
     args = parser.parse_args()
     

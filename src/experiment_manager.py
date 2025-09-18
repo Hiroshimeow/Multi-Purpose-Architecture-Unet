@@ -166,7 +166,12 @@ class ExperimentManager:
         adas_met = "YES" if latency <= adas_latency_req_ms else "NO"
         full_report_str += f"- FPS: {fps:.2f}\n"
         full_report_str += f"- Latency: {latency:.2f} ms\n"
-        full_report_str += f"- ADAS Latency Requirement (<= {adas_latency_req_ms:.1f} ms): {adas_met}\n\n"
+        full_report_str += f"- ADAS Latency Requirement (<= {adas_latency_req_ms:.1f} ms): {adas_met}\n"
+
+        gflops = performance.get('gflops', 0)
+        efficiency = performance.get('efficiency', 0)
+        full_report_str += f"- GFLOPs: {gflops:.2f}\n"
+        full_report_str += f"- Efficiency (mIoU/GFLOPs): {efficiency:.4f}\n\n"
 
         full_report_str += "--- Per-Class Metrics (from final evaluation) ---\n"
         for class_name, metrics in per_class_metrics.items():

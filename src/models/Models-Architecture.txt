@@ -1,0 +1,146 @@
+###################################
+# 1. Unet-Base Architecture
+###################################
+
++------------------+                                +------------------+
+| Inc              |                                | Decoder 4        |
+| DoubleConv(32)   |----skip---------------------->| Up(64->32)       |
++------------------+                                | DoubleConv(32)   |
+        | MaxPool                                 +------------------+
+        V                                                    ^ Up
++------------------+                                         |
+| Encoder 1        |                                +------------------+
+| DoubleConv(64)   |----skip---------------------->| Decoder 3        |
++------------------+                                | Up(128->64)      |
+        | MaxPool                                 | DoubleConv(64)   |
+        V                                         +------------------+
++------------------+                                         ^ Up
+| Encoder 2        |                                         |
+| DoubleConv(128)  |----skip---------------------->| Decoder 2        |
++------------------+                                | Up(256->128)     |
+        | MaxPool                                 | DoubleConv(128)  |
+        V                                         +------------------+
++------------------+                                         ^ Up
+| Encoder 3        |                                         |
+| DoubleConv(256)  |----skip---------------------->| Decoder 1        |
++------------------+                                | Up(512->256)     |
+        | MaxPool                                 | DoubleConv(256)  |
+        V                                         +------------------+
++--------------------------------+                       ^ Up
+|           Bottleneck           |                       |
+|         DoubleConv(512)        |-----------------------+
++--------------------------------+
+
+
+###################################
+# 2. Unet-Cbam Architecture
+###################################
+
++------------------+                                +------------------+
+| Inc              |                                | Decoder 4        |
+| DoubleConv(32)   |                                | Up(64->32)       |
++------------------+                                | DoubleConv(32)   |
+|       CBAM       |----skip---------------------->+------------------+
++------------------+                                         ^ Up
+        | MaxPool                                            |
+        V                                         +------------------+
++------------------+                                | Decoder 3        |
+| Encoder 1        |                                | Up(128->64)      |
+| DoubleConv(64)   |                                | DoubleConv(64)   |
++------------------+                                +------------------+
+|       CBAM       |----skip---------------------->         ^ Up
++------------------+                                         |
+        | MaxPool                                 +------------------+
+        V                                         | Decoder 2        |
++------------------+                                | Up(256->128)     |
+| Encoder 2        |                                | DoubleConv(128)  |
+| DoubleConv(128)  |                                +------------------+
++------------------+                                         ^ Up
+|       CBAM       |----skip---------------------->         |
++------------------+                                +------------------+
+        | MaxPool                                 | Decoder 1        |
+        V                                         | Up(512->256)     |
++------------------+                                | DoubleConv(256)  |
+| Encoder 3        |                                +------------------+
+| DoubleConv(256)  |                                         ^ Up
++------------------+                                         |
+|       CBAM       |----skip---------------------->         |
++------------------+                                         |
+        | MaxPool                                            |
+        V                                                    |
++------------------+                                         |
+| Bottleneck       |                                         |
+| DoubleConv(512)  |-----------------------------------------+
++------------------+
+|       CBAM       |
++------------------+
+
+
+###################################
+# 3. Unet-BandSelector Architecture
+###################################
+
++--------------------+
+| BandSelector(25->3)|
++--------------------+
+          |
+          V
+(Continues with Unet-Base structure, taking 3 channels as input)
+
+
+###################################
+# 4. Unet-SEAttention (SAC) Architecture.
+###################################
+
++-----------------+
+| SAC Block(25->3)|
++-----------------+
+          |
+          V
+(Continues with Unet-Base structure, taking 3 channels as input)
+
+
+###################################
+# 5. Unet-Bcd Architecture
+###################################
+
++-----------------------+
+| BCD Block(25->3->25)  |
++-----------------------+
+          |
+          V
+(Continues with Unet-Base structure, taking 25 channels as input)
+
+
+###################################
+# 6. Unet-Cbam-Seattention Arch.
+###################################
+
++-----------------+
+| SAC Block(25->3)|
++-----------------+
+          |
+          V
+(Continues with Unet-Cbam structure, taking 3 channels as input)
+
+
+###################################
+# 7. Unet-DepthwiseSeparable Arch.
+###################################
+
+(Structure is identical to Unet-Base, but every "DoubleConv" is replaced with "DoubleDSConv")
+
+
+###################################
+# 8. Unet-DeepSupervision Arch.
+###################################
+
+(Structure is identical to Unet-Base, but with additional outputs from decoder blocks)
+
+... | Decoder 4        | <-- Aux Output 2 (OutConv)
+... | DoubleConv(32)   | 
+    +------------------+ 
+
+... | Decoder 3        | <-- Aux Output 1 (OutConv)
+... | DoubleConv(64)   | 
+    +------------------+

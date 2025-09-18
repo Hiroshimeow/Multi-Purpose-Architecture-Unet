@@ -2,8 +2,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .Band_Selector import BandSelector # Import the new BandSelector
 
-# --- Teacher's Code --- 
+# --- WangTeacher's Code --- 
 class SE_attention(nn.Module):
     def __init__(self, channels, reduction=4):
         super(SE_attention, self).__init__()
@@ -126,21 +127,33 @@ class BandCompressionDecompression(nn.Module):
         return x
 
 class GeminiUNetV2(nn.Module):
-    def __init__(self, in_channels, num_classes, initial_filters=32, depth=4, dropout_rate=0.2, bilinear=True, sac_params=None, use_bcd=False, bcd_intermediate_channels=3, **kwargs):
+    def __init__(self, in_channels, num_classes, initial_filters=32, depth=4, dropout_rate=0.2, bilinear=True, sac_params=None, use_bcd=False, bcd_intermediate_channels=3, band_selector_config=None, **kwargs):
         super(GeminiUNetV2, self).__init__()
         self.depth = depth
         self.use_sac = sac_params is not None
         self.use_bcd = use_bcd
+        self.use_band_selector = band_selector_config is not None
+
+        # --- Band Selector --- 
+        if self.use_band_selector:
+            original_in_channels = in_channels # Store original in_channels for BandSelector
+            self.band_selector = BandSelector(**band_selector_config)
+            unet_input_channels_after_preprocessing = band_selector_config['num_selected_bands']
+        else:
+            self.band_selector = None
+            unet_input_channels_after_preprocessing = in_channels
 
         if self.use_bcd:
-            self.bcd = BandCompressionDecompression(in_channels, bcd_intermediate_channels)
-            unet_input_channels_after_preprocessing = in_channels # BCD outputs original channel count
+            self.bcd = BandCompressionDecompression(unet_input_channels_after_preprocessing, bcd_intermediate_channels)
+            # BCD outputs original channel count, which is now the output of band_selector or original in_channels
+            unet_input_channels_after_preprocessing = unet_input_channels_after_preprocessing 
         else:
-            unet_input_channels_after_preprocessing = in_channels # If BCD not used, input channels remain original
+            unet_input_channels_after_preprocessing = unet_input_channels_after_preprocessing # If BCD not used, input channels remain original
 
         if self.use_sac:
-            # SAC will operate on channels after BCD (if enabled) or original in_channels
-            self.sac = SAC(input_depth=unet_input_channels_after_preprocessing, **sac_params)
+            # FIX: Truyền đúng in_channels vào cho SAC
+            sac_params['input_depth'] = unet_input_channels_after_preprocessing
+            self.sac = SAC(**sac_params)
             unet_in_channels = sac_params.get('reduced_depth', 3)
         else:
             unet_in_channels = unet_input_channels_after_preprocessing # If SAC not used, channels remain as they are after BCD or original
@@ -172,6 +185,8 @@ class GeminiUNetV2(nn.Module):
         self.outc = OutConv(initial_filters, num_classes)
 
     def forward(self, x):
+        if self.use_band_selector:
+            x = self.band_selector(x)
         if self.use_bcd:
             x = self.bcd(x)
         if self.use_sac: # Apply SAC after BCD if both are enabled

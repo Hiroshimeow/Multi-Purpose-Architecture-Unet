@@ -10,4 +10,4 @@ opencv-python-headless
 albumentations
 h5py
 scipy
-pandas
+pandasthop

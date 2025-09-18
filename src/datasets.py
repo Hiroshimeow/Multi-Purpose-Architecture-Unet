@@ -18,9 +18,8 @@ class TiledHyperspectralDataset(Dataset):
         self.file_paths = file_paths
         self.stats = stats
 
-        patch_cfg = config['data']['patching']
-        ps = patch_cfg['patch_size']
-        st = patch_cfg['stride']
+        ps = config['data']['patching']['patch_size']
+        st = config['data']['patching']['stride']
         self.patch_size = (ps, ps) if isinstance(ps, int) else tuple(ps)
         self.stride = (st, st) if isinstance(st, int) else tuple(st)
         
@@ -133,12 +132,16 @@ class TiledHyperspectralDataset(Dataset):
             data_keys = [k for k in mat_data.keys() if not k.startswith('__')]
             if not data_keys: raise ValueError(f"No data found in {cube_path}")
             cube = mat_data[data_keys[0]].astype(np.float32)
-            if cube.shape[0] == self.in_channels: cube = np.transpose(cube, (1, 2, 0))
+            # Ensure cube is (H, W, C)
+            if cube.ndim == 3 and cube.shape[0] < cube.shape[2] and cube.shape[0] < cube.shape[1]: # Assume C, H, W
+                cube = np.transpose(cube, (1, 2, 0)) # Convert to H, W, C
         except Exception:
             with h5py.File(cube_path, 'r') as f:
                 key = list(f.keys())[0]
                 cube = np.array(f[key]).astype(np.float32)
-                if cube.shape[0] == self.in_channels: cube = np.transpose(cube, (1, 2, 0))
+                # Ensure cube is (H, W, C)
+                if cube.ndim == 3 and cube.shape[0] < cube.shape[2] and cube.shape[0] < cube.shape[1]: # Assume C, H, W
+                    cube = np.transpose(cube, (1, 2, 0)) # Convert to H, W, C
         return cube
 
     def _load_mask(self, mask_path):

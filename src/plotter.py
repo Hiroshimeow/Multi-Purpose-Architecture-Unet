@@ -102,13 +102,18 @@ def plot_segmentation_results(samples: list, class_names: list, output_dir: Path
         fig, axes = plt.subplots(1, 3, figsize=(24, 8))
         
         # 1. Original Image
-        if image.shape[2] > 3:
-            rgb_image = image[:, :, [15, 8, 2]] 
-            rgb_image = np.clip((rgb_image - rgb_image.min()) / (rgb_image.max() - rgb_image.min() + 1e-8), 0, 1)
-        else:
+        if image.shape[2] == 25: # Assuming 25 channels for hyperspectral
+            rgb_image = image[:, :, [15, 8, 2]] # Example bands for false color
+        elif image.shape[2] == 5: # For 5-channel input (e.g., from BandSelector or PCA)
+            rgb_image = image[:, :, [0, 1, 2]] # Use first 3 channels as RGB
+        elif image.shape[2] == 3: # Already RGB
             rgb_image = image
+        else: # Grayscale or other single-channel, convert to pseudo-RGB
+            rgb_image = np.stack([image[:, :, 0]] * 3, axis=-1) # Repeat first channel 3 times
+
+        rgb_image = np.clip((rgb_image - rgb_image.min()) / (rgb_image.max() - rgb_image.min() + 1e-8), 0, 1)
         axes[0].imshow(rgb_image)
-        axes[0].set_title('Original Image (False Color)')
+        axes[0].set_title('Original Image (Processed)')
         axes[0].axis('off')
 
         # 2. Ground Truth (chuyển đổi sang RGB)

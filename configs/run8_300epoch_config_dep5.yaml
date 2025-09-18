@@ -1,0 +1,74 @@
+# Command: python run8_300epoch.py --config configs/run8_300epoch_config_dep5.yaml --band True
+
+# --- Experiment Setup ---
+run_name: 'run8_re-experiment_300_epochs_5_channels_trainable_band_selector_bs32_dep5'
+base_output_dir: './training_runs'
+class_names: ["background", "road", "building", "water", "vegetation", "unlabeled"] # Assuming 6 classes based on common segmentation tasks
+
+# --- Data Handling ---
+data:
+  dir: "Image_dataset"
+  normalization: 'z-score'
+  class_mapping: {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5} # Default mapping for 6 classes
+  # class_mapping: {1: 0, 2: 1, 3: 2, 5: 3, 0: 4, 4: 4, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4} # Adjust if class mapping is different for 6 classes
+  patching:
+    patch_size: 224 # As requested
+    stride: 112   # As requested
+  # selected_channels: [0, 1, 2, 3, 4] # Removed: Channel selection is now handled by BandSelector or model in_channels
+
+# --- Augmentation Settings ---
+augmentation:
+  horizontal_flip:
+    p: 0.5
+  random_rotate_90:
+    p: 0.5
+  shift_scale_rotate:
+    p: 0.5
+    shift_limit: 0.0625
+    scale_limit: 0.1
+    rotate_limit: 15
+  random_brightness_contrast:
+    p: 0.5
+
+# --- Model Architecture ---
+model:
+  name: 'GeminiUNetV2'
+  params:
+    in_channels: 5 # Expected output of BandSelector or explicitly selected channels
+    num_classes: 6 # Assuming 6 classes
+    initial_filters: 32 # From Run 8
+    depth: 5 # Changed from 4 to 5
+    dropout_rate: 0.2
+    bilinear: False # From Run 8
+    sac_params:
+      reduced_depth: 3
+      channels: 32 # Should match initial_filters for SAC
+      use_sea: True # From Run 8's success
+
+# --- Loss Function ---
+loss:
+  name: 'CombinedLoss'
+  params:
+    alpha: 0.4 # From Run 9's Dice-focused loss
+    beta: 0.6  # From Run 9's Dice-focused loss
+
+# --- Training Process ---
+training:
+  num_epochs: 300 # As requested
+  batch_size: 32
+  use_amp: True
+  early_stopping_patience: 80 # As requested
+
+# --- Optimizer ---
+optimizer:
+  name: 'AdamW'
+  params:
+    lr: 0.001
+    weight_decay: 0.0001
+
+# --- Scheduler ---
+scheduler:
+  name: 'CosineAnnealingLR'
+  params:
+    T_max: 300 # Should match num_epochs
+    eta_min: 0.000001

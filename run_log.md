@@ -368,7 +368,7 @@ This document details the ongoing experiments for the GeminiUNetV2 model, aiming
 *   `training.num_epochs`: 140
 *   `scheduler.params.T_max`: 140
 
-**Command to Execute:** `source /data1/.venv/bin/activate && python3 run9.py --config configs/run9_config.yaml`
+**Command to Execute:** `source /data1/.venv/bin/activate && python run9.py --config configs/run9_config.yaml`
 
 **Status:** Completed.
 

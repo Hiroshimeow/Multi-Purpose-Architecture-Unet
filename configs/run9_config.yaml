@@ -49,10 +49,10 @@ loss:
 
 # --- Training Process ---
 training:
-  num_epochs: 140
-  batch_size: 16
+  num_epochs: 200
+  batch_size: 12
   use_amp: True
-  early_stopping_patience: 10
+  early_stopping_patience: 50
 
 # --- Optimizer ---
 optimizer:
@@ -65,5 +65,5 @@ optimizer:
 scheduler:
   name: 'CosineAnnealingLR'
   params:
-    T_max: 140
+    T_max: 200
     eta_min: 0.000001

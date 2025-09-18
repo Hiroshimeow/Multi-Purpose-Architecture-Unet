@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 
 # Import the new Gemini loss
-from .gemini_loss import GeminiCombinedLoss
+from .loss import GeminiCombinedLoss
 
 # --- Loss classes from losses.py ---
 
@@ -72,17 +72,33 @@ class WeightedCombinedLoss(nn.Module):
         return self.alpha * weighted_ce_loss + self.beta * dice
 
 class CombinedLoss(nn.Module):
-    def __init__(self, weight=None, alpha=0.5, beta=0.5):
+    def __init__(self, weight=None, alpha=0.5, beta=0.5, ds_weights=None):
         super(CombinedLoss, self).__init__()
         self.ce_loss = nn.CrossEntropyLoss(weight=torch.FloatTensor(weight) if weight is not None else None)
         self.dice_loss = DiceLoss()
         self.alpha = alpha
         self.beta = beta
+        self.ds_weights = ds_weights if ds_weights else [0.4, 0.2] # Default weights for DS outputs
 
-    def forward(self, logits, targets):
-        ce = self.ce_loss(logits, targets.long())
-        dice = self.dice_loss(logits, targets)
-        return self.alpha * ce + self.beta * dice
+    def forward(self, outputs, targets):
+        # Handle both single tensor output and list output (for deep supervision)
+        if not isinstance(outputs, list):
+            outputs = [outputs]
+
+        total_loss = 0
+        # The first output is the main one, gets full weight
+        main_loss = self.alpha * self.ce_loss(outputs[0], targets.long()) + self.beta * self.dice_loss(outputs[0], targets)
+        total_loss += main_loss
+
+        # Add weighted losses for deep supervision outputs
+        if len(outputs) > 1:
+            for i, (output, weight) in enumerate(zip(outputs[1:], self.ds_weights)):
+                # Downsample target mask to match output size
+                target_downsampled = F.interpolate(targets.unsqueeze(1).float(), size=output.shape[2:], mode='nearest').squeeze(1)
+                ds_loss = self.alpha * self.ce_loss(output, target_downsampled.long()) + self.beta * self.dice_loss(output, target_downsampled)
+                total_loss += weight * ds_loss
+        
+        return total_loss
 
 # --- Loss Factory ---
 

@@ -237,12 +237,12 @@ The next logical step is to explore if using slightly more principal components 
 
 1.  **Chạy Thử 1 Epoch:**
     *   **Mục đích:** Nhanh chóng xác thực tính đúng đắn của code, cấu hình và dữ liệu.
-    *   **Lệnh:** Chạy script huấn luyện với tham số `--epochs 1`.
+    *   **Lệnh:** Chạy script huấn luyện `run.py` với tham số `--epochs 1`. Ví dụ: `python run.py --config configs/run10_config.yaml --epochs 1`
     *   **Kiểm tra:** Nếu lần chạy thử thành công, tiến hành bước tiếp theo. Nếu có lỗi, dừng lại và sửa lỗi.
 
 2.  **Chạy Huấn luyện Nền:**
     *   **Mục đích:** Thực hiện quá trình huấn luyện đầy đủ mà không làm gián đoạn phiên làm việc của người dùng.
-    *   **Lệnh:** Sử dụng lệnh `... > ten_file.log 2>&1 &` để chuyển hướng toàn bộ output (cả stdout và stderr) vào một file log và chạy tiến trình trong nền.
+    *   **Lệnh:** Sử dụng lệnh `python run.py --config configs/run10_config.yaml --epochs 140 --run_name <tên_thử_nghiệm> > ten_file.log 2>&1 &` để chuyển hướng toàn bộ output (cả stdout và stderr) vào một file log và chạy tiến trình trong nền.
     *   **Lưu ý:** Ghi lại PID của tiến trình được trả về.
 
 3.  **Theo dõi Tiến độ:**
