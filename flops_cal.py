@@ -1,4 +1,4 @@
-# flops_cal.py
+# các t
 import argparse
 import json
 import yaml
@@ -38,10 +38,9 @@ def calculate_and_save_flops(run_path_str: str):
         print(f"  - Lỗi khi tải model: {e}. Bỏ qua.")
         return
 
-    # 3. Tính toán FLOPs
+    # 3.  FLOPs
     try:
         patch_size = config.get('data', {}).get('patching', {}).get('patch_size', 224)
-        # Đọc chính xác in_channels từ config của lần chạy đó
         in_channels = config.get('model', {}).get('params', {}).get('in_channels', 25)
         
         print(f"  - Creating dummy input with shape: (1, {in_channels}, {patch_size}, {patch_size})")
@@ -49,7 +48,7 @@ def calculate_and_save_flops(run_path_str: str):
 
         flops, _ = profile(model, inputs=(dummy_input,), verbose=False)
         gflops = flops / 1e9
-        print(f"  - GFLOPs tính được: {gflops:.2f}")
+        print(f"  - GFLOPs : {gflops:.2f}")
 
     except Exception as e:
         print(f"  - Lỗi trong quá trình tính FLOPs: {e}. Bỏ qua.")

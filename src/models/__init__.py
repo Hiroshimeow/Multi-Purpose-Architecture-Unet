@@ -8,15 +8,18 @@ from .unet_cbam_seattention import UnetCbamSeattention
 from .unet_bcd import UnetBcd
 from .unet_depthwiseseparable import UnetDepthwiseSeparable
 from .unet_deepsupervision import UnetDeepSupervision
+from .asran_network import ASRAN
+from .cbsfnet import CB_SFNet
+from .vit_unet import ViT_UNet
 
-# --- Import model cũ để tương thích ngược ---
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent))
-from models_ignored_temp.gemini_unet_v2 import GeminiUNetV2
-from models_ignored_temp.flash_unet import FlashUNet
-from models_ignored_temp.gemini_unet import GeminiUNet
-from models_ignored_temp.hybrid_unet import HybridUNet
+# --- Import model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI) ---
+# import sys
+# from pathlib import Path
+# sys.path.append(str(Path(__file__).parent.parent.parent))
+# from models_ignored_temp.gemini_unet_v2 import GeminiUNetV2
+# from models_ignored_temp.flash_unet import FlashUNet
+# from models_ignored_temp.gemini_unet import GeminiUNet
+# from models_ignored_temp.hybrid_unet import HybridUNet
 
 def get_model(name: str, params: dict):
     """
@@ -32,18 +35,24 @@ def get_model(name: str, params: dict):
         'UnetBcd': UnetBcd,
         'UnetDepthwiseSeparable': UnetDepthwiseSeparable,
         'UnetDeepSupervision': UnetDeepSupervision,
+        'ASRAN': ASRAN,
+        'CB_SFNet': CB_SFNet,
+        'ViT_UNet': ViT_UNet,
 
-        # Model cũ để tương thích ngược
-        'GeminiUNetV2': GeminiUNetV2,
-        'FlashUNet': FlashUNet,
-        'GeminiUNet': GeminiUNet,
-        'HybridUNet': HybridUNet,
+        # Model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI)
+        # 'GeminiUNetV2': GeminiUNetV2,
+        # 'FlashUNet': FlashUNet,
+        # 'GeminiUNet': GeminiUNet,
+        # 'HybridUNet': HybridUNet,
     }
 
     if name in models:
-        return models[name](**params)
+        # If a nested 'params' key exists, use it for the model's kwargs.
+        # Otherwise, fall back to the old behavior for compatibility with other models.
+        if 'params' in params:
+            model_params = params['params']
+        else:
+            model_params = {k: v for k, v in params.items() if k not in ['name', 'class_names']}
+        return models[name](**model_params)
     else:
         raise ValueError(f"Model '{name}' not recognized. Available models are: {list(models.keys())}")
-    
-    
-

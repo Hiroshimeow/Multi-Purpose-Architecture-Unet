@@ -8,6 +8,7 @@ import torch
 import pandas as pd
 from sklearn.metrics import classification_report, jaccard_score
 import numpy as np
+from torch.utils.tensorboard import SummaryWriter
 
 # Import plotter từ cùng package src
 from . import plotter
@@ -29,6 +30,7 @@ class ExperimentManager:
                 raise
         print(f"ExperimentManager initialized. Path: '{self.output_dir}'")
         self.start_time = datetime.now()
+        self.writer = SummaryWriter(log_dir=self.output_dir / "runs")
         self._load_history()
 
     @staticmethod
@@ -71,8 +73,16 @@ class ExperimentManager:
         try:
             new_row.to_csv(self.history_path, mode='a', header=is_new_file, index=False)
             self.history_df = pd.concat([self.history_df, new_row], ignore_index=True)
+            
+            # Log to TensorBoard
+            self.writer.add_scalar('Loss/train', metrics['train_loss'], metrics['epoch'])
+            self.writer.add_scalar('Loss/val', metrics['val_loss'], metrics['epoch'])
+            self.writer.add_scalar('Metrics/mIoU', metrics['val_miou'], metrics['epoch'])
+            self.writer.add_scalar('Metrics/Accuracy', metrics['val_acc'], metrics['epoch'])
+            self.writer.add_scalar('Learning_Rate', metrics['lr'], metrics['epoch'])
+
         except Exception as e:
-            print(f"Error writing to history.csv: {e}")
+            print(f"Error writing to history.csv or TensorBoard: {e}")
 
     def save_checkpoint(self, state: dict, is_best: bool):
         try:
@@ -132,6 +142,7 @@ class ExperimentManager:
             plotter.plot_training_history(self.history_df, self.output_dir / "training_metrics.png")
             plotter.plot_confusion_matrix(true_labels, pred_labels, self.class_names, self.output_dir / "confusion_matrix.png")
             plotter.plot_per_class_metrics(per_class_metrics, self.output_dir / "per_class_metrics.png")
+            self.writer.close()
         except Exception as e:
             print(f"An error occurred during final report generation: {e}")
 
@@ -214,8 +225,9 @@ class ExperimentManager:
             print("Analysis skipped: history.csv is empty.")
             return
 
-        class_names = config.get('class_names', [])
-        print("✓ Loaded config and history successfully.")
+        class_names = config.get('model', {}).get('class_names', [])
+        if not class_names:
+            print("Warning: 'class_names' not found in config under the 'model' key. Visualization may fail.")
         
         print("\n--- Generating Plots from Training History ---")
         plotter.plot_training_history(history_df, run_path / "training_metrics_re-plot.png")
@@ -268,10 +280,20 @@ class ExperimentManager:
             else:
                 try:
                     for sample_file in sample_files:
-                        data = np.load(sample_file)
-                        samples_to_plot.append((data['image'], data['ground_truth'], data['prediction']))
-                    
-                    plotter.plot_segmentation_results(samples_to_plot, class_names, run_path / "visual_results")
+                        try:
+                            data = np.load(sample_file, allow_pickle=True)
+                            # Basic validation of content
+                            if 'image' in data and 'ground_truth' in data and 'prediction' in data:
+                                samples_to_plot.append((data['image'], data['ground_truth'], data['prediction']))
+                            else:
+                                print(f"Warning: Skipping invalid sample file {sample_file.name}")
+                        except Exception as load_error:
+                            print(f"Warning: Could not load sample file {sample_file.name}. Error: {load_error}")
+
+                    if not samples_to_plot:
+                        print("  - No valid samples could be loaded from the .npz files.")
+                    else:
+                        plotter.plot_segmentation_results(samples_to_plot, class_names, run_path / "visual_results")
                 except Exception as e:
                     print(f"  - Could not generate visualization plots. Error: {e}")
         else:

@@ -90,11 +90,11 @@ def generate_pca_dataset(config, output_dir, n_components=3):
     print(f"Successfully generated PCA 3-band dataset in {output_dir}")
 
 if __name__ == '__main__':
-    with open('configs/run9_config.yaml', 'r') as f:
+    with open('configs/run12_pca_5band_config.yaml', 'r') as f:
         config = yaml.safe_load(f)
     
     generate_pca_dataset(
         config=config,
-        output_dir='Image_dataset_pca_3band',
-        n_components=3
+        output_dir='Image_dataset_pca_5band',
+        n_components=5
     )

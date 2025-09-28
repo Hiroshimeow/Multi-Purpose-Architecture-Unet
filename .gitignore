@@ -26,7 +26,6 @@ __pycache__/
 *.pyc
 
 # Re-ignore dataset and run directories
-/training_runs/
 /Image_dataset/
 /Image_dataset_3band/
 /Image_dataset_pca_3band/

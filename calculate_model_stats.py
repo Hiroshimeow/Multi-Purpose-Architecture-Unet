@@ -2,27 +2,47 @@ import torch
 import torch.nn as nn
 from thop import profile
 from torchsummary import summary
+import yaml
+import importlib
 
-# Import your model and BandSelector
-from src.models.gemini_unet_v2 import GeminiUNetV2
-from Band_Selector import BandSelector
+def calculate_stats_from_config(config_path, device='cpu'):
+    print(f"\n--- Calculating stats for model from config: {config_path} ---")
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
 
-def calculate_stats(model_name, model_params, input_size=(1, 25, 224, 224), device='cpu'):
-    print(f"\n--- Calculating stats for {model_name} ---")
-    
-    # Adjust input_size based on whether BandSelector is used
-    if 'band_selector_config' in model_params and model_params['band_selector_config'] is not None:
-        # If BandSelector is used, the actual input to the model is 25 channels
-        # The model's in_channels param will be the output of BandSelector (e.g., 5)
-        # So, we need to pass the original 25 channels to the model for FLOPs/Params calculation
-        # and ensure the model's internal logic handles it.
-        # The input_size should reflect the actual input to the model (25 channels)
-        pass # input_size is already (1, 25, 224, 224)
+    model_name = config['model']['name']
+    model_params = config['model']['params']
+    data_dir = config['data']['dir']
+
+    # Dynamically import the model
+    if model_name == "ASRAN":
+        module = importlib.import_module("src.models.asran_network")
+        model_class = getattr(module, "ASRAN")
+    elif model_name == "CB_SFNet":
+        module = importlib.import_module("src.models.cbsfnet")
+        model_class = getattr(module, "CB_SFNet")
     else:
-        # If BandSelector is NOT used, the model's in_channels is the actual input channels
-        input_size = (1, model_params['in_channels'], input_size[2], input_size[3])
+        try:
+            module = importlib.import_module(f"src.models.{model_name.lower()}")
+            model_class = getattr(module, model_name)
+        except (ImportError, AttributeError):
+            raise ValueError(f"Model {model_name} not found in src/models or class name mismatch.")
 
-    model = GeminiUNetV2(**model_params).to(device)
+    # Determine input_channels based on data_dir
+    if "pca_3band" in data_dir:
+        input_channels = 3
+    elif "pca_5band" in data_dir:
+        input_channels = 5
+    else: # Default to 25 for full Image_dataset
+        input_channels = 25 
+    
+    # Override in_channels in model_params if it exists
+    model_params['in_channels'] = input_channels
+
+    # Create a dummy input based on the determined input_channels
+    input_size = (1, input_channels, 224, 224) # Assuming 224x224 patch size
+
+    model = model_class(**model_params).to(device)
     dummy_input = torch.randn(input_size).to(device)
 
     # Calculate FLOPs
@@ -38,74 +58,11 @@ def calculate_stats(model_name, model_params, input_size=(1, 25, 224, 224), devi
 
 if __name__ == '__main__':
     device = 'cpu' # Use CPU for stats calculation to avoid GPU memory issues
+    
+    import argparse
+    parser = argparse.ArgumentParser(description='Calculate model stats from a config file.')
+    parser.add_argument('--config', type=str, required=True, help='Path to the model configuration YAML file.')
+    args = parser.parse_args()
 
-    # --- Model Configurations ---
-    # UNet-base (estimated: Run 3 without SAC, bilinear=True)
-    unet_base_params = {
-        'in_channels': 25,
-        'num_classes': 6,
-        'initial_filters': 32,
-        'depth': 4,
-        'dropout_rate': 0.2,
-        'bilinear': True,
-        'sac_params': None,
-        'use_bcd': False,
-        'band_selector_config': None
-    }
-    calculate_stats("UNet-base", unet_base_params)
+    calculate_stats_from_config(args.config, device)
 
-    # run6 (Large model with data augmentation)
-    run6_params = {
-        'in_channels': 25,
-        'num_classes': 6,
-        'initial_filters': 64,
-        'depth': 4,
-        'dropout_rate': 0.2,
-        'bilinear': False,
-        'sac_params': {'input_depth': 25, 'reduced_depth': 3, 'channels': 64, 'use_sea': True},
-        'use_bcd': False,
-        'band_selector_config': None
-    }
-    calculate_stats("run6", run6_params)
-
-    # run8 (Small model with Transposed Convolutions)
-    run8_params = {
-        'in_channels': 25,
-        'num_classes': 6,
-        'initial_filters': 32,
-        'depth': 4,
-        'dropout_rate': 0.2,
-        'bilinear': False,
-        'sac_params': {'input_depth': 25, 'reduced_depth': 3, 'channels': 32, 'use_sea': True},
-        'use_bcd': False,
-        'band_selector_config': None
-    }
-    calculate_stats("run8", run8_params)
-
-    # run8_300 (Depth 4, Band Selector)
-    run8_300_params = {
-        'in_channels': 5, # Model expects 5 channels after BandSelector
-        'num_classes': 6,
-        'initial_filters': 32,
-        'depth': 4,
-        'dropout_rate': 0.2,
-        'bilinear': False,
-        'sac_params': {'input_depth': 5, 'reduced_depth': 3, 'channels': 32, 'use_sea': True},
-        'use_bcd': False,
-        'band_selector_config': {'original_in_channels': 25, 'num_selected_bands': 5}
-    }
-    calculate_stats("run8_300", run8_300_params)
-
-    # run8_300_dep5 (Depth 5, Band Selector)
-    run8_300_dep5_params = {
-        'in_channels': 5, # Model expects 5 channels after BandSelector
-        'num_classes': 6,
-        'initial_filters': 32,
-        'depth': 5, # Increased depth
-        'dropout_rate': 0.2,
-        'bilinear': False,
-        'sac_params': {'input_depth': 5, 'reduced_depth': 3, 'channels': 32, 'use_sea': True},
-        'use_bcd': False,
-        'band_selector_config': {'original_in_channels': 25, 'num_selected_bands': 5}
-    }
-    calculate_stats("run8_300_dep5", run8_300_dep5_params)

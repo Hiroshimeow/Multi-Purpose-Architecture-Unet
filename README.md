@@ -6,7 +6,7 @@ python analyze.py training_runs/abc
 
 python analyze.py training_runs/unet_run_A_20250911_140000 training_runs/unet_run_B_20250911_150000
 
-python analyze.py 'training_runs/unet_paper_replica*' 
+python analyze.py 'training_runs/CB_SFNet_25_channels_z_score_20250924_234020' 
 --- 
 Sử dụng A5000 để training
 ## 📂 Cấu trúc Project

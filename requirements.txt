@@ -11,3 +11,4 @@ albumentations
 h5py
 scipy
 pandasthop
+kornia

@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, jaccard_score
 import time
 import random
+from thop import profile
 
 class Trainer:
     def __init__(self, model, optimizer, scheduler, criterion, train_loader, val_loader, manager, device, config):
@@ -103,6 +104,10 @@ class Trainer:
             
             total_loss += loss.item()
             pbar.set_postfix(loss=f"{loss.item():.4f}")
+            
+            # Extract segmentation logits from the dictionary output for metrics
+            seg_logits = outputs['segmentation']
+            preds = torch.argmax(seg_logits, dim=1)
         return total_loss / len(self.train_loader)
     
     def _evaluate(self, num_samples_to_save=8):
@@ -126,12 +131,9 @@ class Trainer:
                 total_loss += loss.item()
                 # The model returns a tuple, and the first element is a list of tensors.
                 # The first tensor in the list is the main output.
-                if isinstance(outputs, tuple):
-                    main_output = outputs[0][0]
-                else:
-                    main_output = outputs
-                preds = torch.argmax(main_output, dim=1)
-                
+        # Extract segmentation logits from the dictionary output
+                seg_logits = outputs['segmentation']
+                preds = torch.argmax(seg_logits, dim=1)
                 all_preds.append(preds.cpu().numpy())
                 all_trues.append(masks.cpu().numpy())
 
@@ -213,7 +215,34 @@ class Trainer:
         else:
             print("Warning: best_model.pth not found. Using the last model state.")
 
+        # --- TÍNH TOÁN GFLOPS ---
+        try:
+            patch_size = self.config.get('data', {}).get('patching', {}).get('patch_size', 224)
+            
+            # Xác định in_channels một cách an toàn hơn
+            model_params = self.config.get('model', {}).get('params', {})
+            if 'selected_channels' in model_params and model_params['selected_channels'] is not None:
+                in_channels = model_params['selected_channels']
+            elif 'in_channels' in model_params:
+                in_channels = model_params['in_channels']
+            else:
+                # Fallback hoặc raise error nếu không tìm thấy
+                print("Warning: Could not determine 'in_channels' for GFLOPs calculation. Falling back to 3.")
+                in_channels = 3
+
+            print(f"  - Calculating GFLOPs with input shape: (1, {in_channels}, {patch_size}, {patch_size})")
+            dummy_input = torch.randn(1, in_channels, patch_size, patch_size).to(self.device)
+            
+            flops, _ = profile(self.model, inputs=(dummy_input,), verbose=False)
+            gflops = flops / 1e9
+            print(f"  - Calculated GFLOPs: {gflops:.2f}")
+        except Exception as e:
+            print(f"  - Error during GFLOPs calculation: {e}. Setting GFLOPs to 0.")
+            gflops = 0.0
+        # --- KẾT THÚC TÍNH TOÁN GFLOPS ---
+
         performance_metrics = self.benchmark_performance()
+        performance_metrics['gflops'] = gflops
 
         all_preds, all_trues = [], []
         with torch.no_grad():
@@ -222,10 +251,7 @@ class Trainer:
                 outputs = self.model(images.to(self.device))
                 # The model returns a tuple, and the first element is a list of tensors.
                 # The first tensor in the list is the main output.
-                if isinstance(outputs, tuple):
-                    main_output = outputs[0][0]
-                else:
-                    main_output = outputs
+                main_output = outputs['segmentation']
                 all_preds.append(torch.argmax(main_output, dim=1).cpu().numpy())
                 all_trues.append(masks.numpy())
                 

@@ -3,64 +3,49 @@
     "models": {
       "": {
         "api": {
-          "totalRequests": 20,
-          "totalErrors": 1,
-          "totalLatencyMs": 79170
+          "totalRequests": 11,
+          "totalErrors": 0,
+          "totalLatencyMs": 54684
         },
         "tokens": {
-          "prompt": 1582654,
-          "candidates": 4884,
-          "total": 1589697,
-          "cached": 1212196,
-          "thoughts": 2159,
-          "tool": 0
-        }
-      },
-      "gemini-2.5-flash": {
-        "api": {
-          "totalRequests": 2,
-          "totalErrors": 2,
-          "totalLatencyMs": 2304
-        },
-        "tokens": {
-          "prompt": 0,
-          "candidates": 0,
-          "total": 0,
-          "cached": 0,
-          "thoughts": 0,
+          "prompt": 182582,
+          "candidates": 532,
+          "total": 184960,
+          "cached": 125756,
+          "thoughts": 1846,
           "tool": 0
         }
       }
     },
     "tools": {
-      "totalCalls": 19,
-      "totalSuccess": 18,
-      "totalFail": 1,
-      "totalDurationMs": 160915,
+      "totalCalls": 7,
+      "totalSuccess": 7,
+      "totalFail": 0,
+      "totalDurationMs": 4854,
       "totalDecisions": {
         "accept": 0,
         "reject": 0,
         "modify": 0,
-        "auto_accept": 19
+        "auto_accept": 7
       },
       "byName": {
         "read_file": {
-          "count": 7,
-          "success": 7,
+          "count": 1,
+          "success": 1,
           "fail": 0,
-          "durationMs": 384,
+          "durationMs": 45,
           "decisions": {
             "accept": 0,
             "reject": 0,
             "modify": 0,
-            "auto_accept": 7
+            "auto_accept": 1
           }
         },
-        "write_file": {
+        "run_shell_command": {
           "count": 2,
           "success": 2,
           "fail": 0,
-          "durationMs": 148,
+          "durationMs": 4606,
           "decisions": {
             "accept": 0,
             "reject": 0,
@@ -68,35 +53,35 @@
             "auto_accept": 2
           }
         },
-        "run_shell_command": {
-          "count": 5,
-          "success": 5,
+        "glob": {
+          "count": 1,
+          "success": 1,
           "fail": 0,
-          "durationMs": 159948,
+          "durationMs": 78,
           "decisions": {
             "accept": 0,
             "reject": 0,
             "modify": 0,
-            "auto_accept": 5
+            "auto_accept": 1
           }
         },
-        "replace": {
-          "count": 5,
-          "success": 4,
-          "fail": 1,
-          "durationMs": 435,
+        "write_file": {
+          "count": 3,
+          "success": 3,
+          "fail": 0,
+          "durationMs": 125,
           "decisions": {
             "accept": 0,
             "reject": 0,
             "modify": 0,
-            "auto_accept": 5
+            "auto_accept": 3
           }
         }
       }
     },
     "files": {
-      "totalLinesAdded": 78,
-      "totalLinesRemoved": 28
+      "totalLinesAdded": 16,
+      "totalLinesRemoved": 5
     }
   }
 }
