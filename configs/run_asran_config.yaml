@@ -1,0 +1,69 @@
+# configs/run_asran_config.yaml
+# Experiment for the new ASRAN architecture.
+
+# --- Experiment Setup ---
+run_name: 'ASRAN_experiment_6_20_epochs_test'
+base_output_dir: './training_runs'
+class_names: ["Road", "RoadLine", "Vegetation", "Sky", "NoDrivable"]
+
+# --- Data Handling ---
+data:
+  dir: "Image_dataset_pca_3band" # Using 3-band PCA data as the compressed input
+  normalization: 'min-max' 
+  class_mapping: {1: 0, 2: 1, 3: 2, 5: 3, 0: 4, 4: 4, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4}
+  patching:
+    patch_size: 224
+    stride: 192
+
+# --- Augmentation Settings ---
+augmentation:
+  elastic_transform:
+    p: 0.2
+    alpha: 120
+    sigma: 12
+  shift_scale_rotate:
+    p: 0.7
+    shift_limit: 0.0625
+    scale_limit: 0.1
+    rotate_limit: 15
+  random_brightness_contrast:
+    p: 0.7
+  gauss_noise:
+    p: 0.2
+
+# --- Model Architecture ---
+model:
+  name: 'ASRAN'
+  params:
+    in_channels: 3
+    reconstructed_channels: 25
+    num_classes: 5
+    base_filters: 16 # Reduced for very small capacity, targeting ~1.0MB model size
+
+# --- Loss Function ---
+loss:
+  name: 'CombinedLoss'
+  params:
+    alpha: 0.4 # Dice-focused loss
+    beta: 0.6
+
+# --- Training Process ---
+training:
+  num_epochs: 300 # Extended training run
+  batch_size: 32
+  use_amp: True
+  early_stopping_patience: 50
+
+# --- Optimizer ---
+optimizer:
+  name: 'AdamW'
+  params:
+    lr: 0.001
+    weight_decay: 0.0001
+
+# --- Scheduler ---
+scheduler:
+  name: 'CosineAnnealingLR'
+  params:
+    T_max: 300 # Match num_epochs
+    eta_min: 0.000001

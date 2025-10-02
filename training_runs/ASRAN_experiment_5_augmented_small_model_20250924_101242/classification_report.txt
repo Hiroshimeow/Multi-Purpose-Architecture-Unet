@@ -1,0 +1,32 @@
+--- Final Training Report ---
+
+Run Name: ASRAN_experiment_5_augmented_small_model
+Full Path: training_runs/ASRAN_experiment_5_augmented_small_model_20250924_101242
+Training Duration: 0:00:20
+Completed Epochs: 1
+Best Validation mIoU: 0.2305
+
+--- Performance Benchmark ---
+- FPS: 588.18
+- Latency: 6.80 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 0.00
+- Efficiency (mIoU/GFLOPs): 0.0000
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.5595, Dice = 0.7175
+- RoadLine                 : IoU = 0.1184, Dice = 0.2117
+- Vegetation               : IoU = 0.2167, Dice = 0.3562
+- Sky                      : IoU = 0.2073, Dice = 0.3434
+- NoDrivable               : IoU = 0.0510, Dice = 0.0970
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.7971  0.6524    0.7175 4083887.0000
+RoadLine         0.7583  0.1230    0.2117 1040990.0000
+Vegetation       0.3556  0.3568    0.3562  954992.0000
+Sky              0.8847  0.2131    0.3434 1145215.0000
+NoDrivable       0.0545  0.4393    0.0970  351492.0000
+accuracy         0.4661  0.4661    0.4661       0.4661
+macro avg        0.5700  0.3569    0.3452 7576576.0000
+weighted avg     0.7149  0.4661    0.5171 7576576.0000

@@ -1,0 +1,30 @@
+--- Final Training Report ---
+
+Run Name: GeminiUNetV2_run6_large_augmentation
+Full Path: training_runs/GeminiUNetV2_run6_large_augmentation_20250913_001847
+Training Duration: 0:19:31
+Completed Epochs: 20
+Best Validation mIoU: 0.5820
+
+--- Performance Benchmark ---
+- FPS: 49.24
+- Latency: 324.95 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.7658, Dice = 0.8674
+- RoadLine                 : IoU = 0.2876, Dice = 0.4467
+- Vegetation               : IoU = 0.6282, Dice = 0.7716
+- Sky                      : IoU = 0.6093, Dice = 0.7572
+- NoDrivable               : IoU = 0.6190, Dice = 0.7647
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.8312  0.9067    0.8674 3064324.0000
+RoadLine         0.8605  0.3016    0.4467  481720.0000
+Vegetation       0.8298  0.7211    0.7716 1102620.0000
+Sky              0.9661  0.6225    0.7572  428009.0000
+NoDrivable       0.7199  0.8153    0.7647 2499903.0000
+accuracy         0.7950  0.7950    0.7950       0.7950
+macro avg        0.8415  0.6735    0.7215 7576576.0000
+weighted avg     0.8038  0.7950    0.7866 7576576.0000

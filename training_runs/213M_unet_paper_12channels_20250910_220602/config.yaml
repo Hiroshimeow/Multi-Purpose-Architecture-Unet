@@ -1,0 +1,71 @@
+run_name: unet_paper_12channels
+base_output_dir: training_runs
+class_names:
+- Road (tarmac)
+- Road marks
+- Painted metal
+- Sky
+- Concrete/stone/brick
+model:
+    name: HybridUNet
+    params:
+        in_channels: 25
+        selected_channels: 12
+        num_classes: 5
+        bilinear: true
+        base_filters: 64
+data:
+    dir: dataset_40_for_test
+    normalization: z-score
+    patching:
+        patch_size: 384
+        stride: 192
+    class_mapping:
+        1: 0
+        2: 1
+        4: 2
+        5: 3
+        6: 4
+        0: 0
+        3: 2
+        7: 2
+        9: 2
+        10: 4
+augmentation:
+    elastic_transform:
+        p: 0.5
+        alpha: 120
+        sigma: 6
+    shift_scale_rotate:
+        p: 0.7
+        shift_limit: 0.0625
+        scale_limit: 0.1
+        rotate_limit: 15
+    random_brightness_contrast:
+        p: 0.3
+    gauss_noise:
+        p: 0.2
+training:
+    batch_size: 16
+    num_epochs: 40
+    early_stopping_patience: 30
+optimizer:
+    name: SGD
+    params:
+        lr: 0.01
+        momentum: 0.99
+        weight_decay: 0.0005
+scheduler:
+    name: ReduceLROnPlateau
+    params:
+        mode: min
+        factor: 0.1
+        patience: 10
+loss:
+    name: WeightedCombinedLoss
+    boundary_weight:
+        w0: 10.0
+        sigma: 5.0
+    params:
+        alpha: 1.0
+        beta: 0.5

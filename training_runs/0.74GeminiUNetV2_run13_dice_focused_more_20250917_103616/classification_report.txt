@@ -1,0 +1,30 @@
+--- Final Training Report ---
+
+Run Name: GeminiUNetV2_run13_dice_focused_more
+Full Path: training_runs/GeminiUNetV2_run13_dice_focused_more_20250917_103616
+Training Duration: 2:39:25
+Completed Epochs: 200
+Best Validation mIoU: 0.7452
+
+--- Performance Benchmark ---
+- FPS: 100.67
+- Latency: 119.20 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8925, Dice = 0.9432
+- RoadLine                 : IoU = 0.6605, Dice = 0.7955
+- Vegetation               : IoU = 0.6918, Dice = 0.8178
+- Sky                      : IoU = 0.7368, Dice = 0.8484
+- NoDrivable               : IoU = 0.7444, Dice = 0.8535
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9385  0.9480    0.9432 3309166.0000
+RoadLine         0.8478  0.7493    0.7955  191058.0000
+Vegetation       0.9144  0.7398    0.8178 1184305.0000
+Sky              0.9652  0.7569    0.8484  351726.0000
+NoDrivable       0.8096  0.9023    0.8535 2540321.0000
+accuracy         0.8862  0.8862    0.8862       0.8862
+macro avg        0.8951  0.8192    0.8517 7576576.0000
+weighted avg     0.8905  0.8862    0.8854 7576576.0000

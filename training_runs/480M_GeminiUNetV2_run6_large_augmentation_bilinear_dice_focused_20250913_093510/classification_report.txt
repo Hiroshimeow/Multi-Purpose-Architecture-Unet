@@ -1,0 +1,30 @@
+--- Final Training Report ---
+
+Run Name: GeminiUNetV2_run6_large_augmentation_bilinear_dice_focused
+Full Path: training_runs/GeminiUNetV2_run6_large_augmentation_bilinear_dice_focused_20250913_093510
+Training Duration: 0:58:26
+Completed Epochs: 66
+Best Validation mIoU: 0.6931
+
+--- Performance Benchmark ---
+- FPS: 49.17
+- Latency: 325.39 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8547, Dice = 0.9217
+- RoadLine                 : IoU = 0.5786, Dice = 0.7331
+- Vegetation               : IoU = 0.6371, Dice = 0.7784
+- Sky                      : IoU = 0.6929, Dice = 0.8186
+- NoDrivable               : IoU = 0.7025, Dice = 0.8253
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9200  0.9233    0.9217 3330529.0000
+RoadLine         0.8190  0.6635    0.7331  208405.0000
+Vegetation       0.8322  0.7311    0.7784 1090687.0000
+Sky              0.9295  0.7313    0.8186  350523.0000
+NoDrivable       0.7910  0.8625    0.8253 2596432.0000
+accuracy         0.8588  0.8588    0.8588       0.8588
+macro avg        0.8583  0.7824    0.8154 7576576.0000
+weighted avg     0.8608  0.8588    0.8580 7576576.0000

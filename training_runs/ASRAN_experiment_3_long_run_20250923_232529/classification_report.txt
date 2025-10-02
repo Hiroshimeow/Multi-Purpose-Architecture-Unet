@@ -1,0 +1,32 @@
+--- Final Training Report ---
+
+Run Name: ASRAN_experiment_3_long_run
+Full Path: training_runs/ASRAN_experiment_3_long_run_20250923_232529
+Training Duration: 0:11:48
+Completed Epochs: 55
+Best Validation mIoU: 0.6686
+
+--- Performance Benchmark ---
+- FPS: 202.93
+- Latency: 19.71 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 0.00
+- Efficiency (mIoU/GFLOPs): 0.0000
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8631, Dice = 0.9265
+- RoadLine                 : IoU = 0.5658, Dice = 0.7227
+- Vegetation               : IoU = 0.5759, Dice = 0.7309
+- Sky                      : IoU = 0.6451, Dice = 0.7843
+- NoDrivable               : IoU = 0.6934, Dice = 0.8189
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.8959  0.9593    0.9265 3121582.0000
+RoadLine         0.9107  0.5991    0.7227  256679.0000
+Vegetation       0.7711  0.6947    0.7309 1063616.0000
+Sky              0.9303  0.6779    0.7843  378459.0000
+NoDrivable       0.8081  0.8301    0.8189 2756240.0000
+accuracy         0.8489  0.8489    0.8489       0.8489
+macro avg        0.8632  0.7522    0.7967 7576576.0000
+weighted avg     0.8486  0.8489    0.8459 7576576.0000

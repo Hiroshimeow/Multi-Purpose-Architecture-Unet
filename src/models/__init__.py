@@ -9,7 +9,7 @@ from .unet_bcd import UnetBcd
 from .unet_depthwiseseparable import UnetDepthwiseSeparable
 from .unet_deepsupervision import UnetDeepSupervision
 from .asran_network import ASRAN
-from .cbsfnet import CB_SFNet
+from .cbsfnet import CB_SFNet, ASRAN_LBS
 from .vit_unet import ViT_UNet
 
 # --- Import model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI) ---
@@ -37,6 +37,7 @@ def get_model(name: str, params: dict):
         'UnetDeepSupervision': UnetDeepSupervision,
         'ASRAN': ASRAN,
         'CB_SFNet': CB_SFNet,
+        'ASRAN_LBS': ASRAN_LBS,
         'ViT_UNet': ViT_UNet,
 
         # Model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI)

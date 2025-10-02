@@ -1,0 +1,30 @@
+--- Final Training Report ---
+
+Run Name: GeminiUNetV2_run8_small_deconv
+Full Path: training_runs/GeminiUNetV2_run8_small_deconv_20250912_170956
+Training Duration: 0:07:44
+Completed Epochs: 18
+Best Validation mIoU: 0.2548
+
+--- Performance Benchmark ---
+- FPS: 101.40
+- Latency: 157.79 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.6985, Dice = 0.8225
+- RoadLine                 : IoU = 0.0060, Dice = 0.0120
+- Vegetation               : IoU = 0.1769, Dice = 0.3007
+- Sky                      : IoU = 0.1739, Dice = 0.2963
+- NoDrivable               : IoU = 0.2169, Dice = 0.3564
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9724  0.7127    0.8225 4560674.0000
+RoadLine         0.0095  0.0162    0.0120   99488.0000
+Vegetation       0.2688  0.3411    0.3007  755281.0000
+Sky              0.8240  0.1807    0.2963 1257851.0000
+NoDrivable       0.2351  0.7368    0.3564  903282.0000
+accuracy         0.5810  0.5810    0.5810       0.5810
+macro avg        0.4620  0.3975    0.3576 7576576.0000
+weighted avg     0.7771  0.5810    0.6169 7576576.0000

@@ -1,0 +1,30 @@
+--- Final Training Report ---
+
+Run Name: tangpatchsize192-96
+Full Path: training_runs/tangpatchsize192-96_20250911_123457
+Training Duration: 0:41:55
+Completed Epochs: 149
+Best Validation mIoU: 0.6500
+
+--- Performance Benchmark ---
+- FPS: 414.70
+- Latency: 38.58 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road (tarmac)            : IoU = 0.8214, Dice = 0.9020
+- Road marks               : IoU = 0.6169, Dice = 0.7631
+- Painted metal            : IoU = 0.6636, Dice = 0.7978
+- Sky                      : IoU = 0.8023, Dice = 0.8903
+- Concrete/stone/brick     : IoU = 0.3451, Dice = 0.5131
+
+--- Classification Report (Scikit-learn) ---
+                      precision  recall  f1-score       support
+Road (tarmac)            0.8506  0.9599    0.9020 10768715.0000
+Road marks               0.9588  0.6337    0.7631   470818.0000
+Painted metal            0.8838  0.7270    0.7978  3544965.0000
+Sky                      0.9780  0.8171    0.8903   901341.0000
+Concrete/stone/brick     0.7144  0.4003    0.5131  1013553.0000
+accuracy                 0.8596  0.8596    0.8596        0.8596
+macro avg                0.8771  0.7076    0.7732 16699392.0000
+weighted avg             0.8593  0.8596    0.8517 16699392.0000

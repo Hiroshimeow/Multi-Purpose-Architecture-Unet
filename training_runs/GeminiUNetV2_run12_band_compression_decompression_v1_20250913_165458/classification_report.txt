@@ -1,0 +1,30 @@
+--- Final Training Report ---
+
+Run Name: GeminiUNetV2_run12_band_compression_decompression_v1
+Full Path: training_runs/GeminiUNetV2_run12_band_compression_decompression_v1_20250913_165458
+Training Duration: 0:05:40
+Completed Epochs: 30
+Best Validation mIoU: 0.6348
+
+--- Performance Benchmark ---
+- FPS: 365.42
+- Latency: 43.78 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8406, Dice = 0.9134
+- RoadLine                 : IoU = 0.5130, Dice = 0.6782
+- Vegetation               : IoU = 0.5739, Dice = 0.7292
+- Sky                      : IoU = 0.6050, Dice = 0.7539
+- NoDrivable               : IoU = 0.6410, Dice = 0.7812
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9105  0.9163    0.9134 3321255.0000
+RoadLine         0.8330  0.5718    0.6782  245968.0000
+Vegetation       0.8381  0.6454    0.7292 1244334.0000
+Sky              0.9450  0.6271    0.7539  415581.0000
+NoDrivable       0.7147  0.8613    0.7812 2349438.0000
+accuracy         0.8277  0.8277    0.8277       0.8277
+macro avg        0.8483  0.7244    0.7712 7576576.0000
+weighted avg     0.8373  0.8277    0.8258 7576576.0000

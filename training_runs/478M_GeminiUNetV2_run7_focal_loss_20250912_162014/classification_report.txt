@@ -1,0 +1,30 @@
+--- Final Training Report ---
+
+Run Name: GeminiUNetV2_run7_focal_loss
+Full Path: training_runs/GeminiUNetV2_run7_focal_loss_20250912_162014
+Training Duration: 0:02:57
+Completed Epochs: 25
+Best Validation mIoU: 0.2914
+
+--- Performance Benchmark ---
+- FPS: 47.88
+- Latency: 167.09 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.6699, Dice = 0.8023
+- RoadLine                 : IoU = 0.2001, Dice = 0.3335
+- Vegetation               : IoU = 0.0571, Dice = 0.1080
+- Sky                      : IoU = 0.5237, Dice = 0.6874
+- NoDrivable               : IoU = 0.0060, Dice = 0.0119
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score     support
+Road             0.8744  0.7413    0.8023 222161.0000
+RoadLine         0.8421  0.2079    0.3335  52714.0000
+Vegetation       0.7604  0.0581    0.1080  74019.0000
+Sky              0.9896  0.5266    0.6874  51506.0000
+NoDrivable       0.0060  0.9911    0.0119   1008.0000
+accuracy         0.5183  0.5183    0.5183      0.5183
+macro avg        0.6945  0.5050    0.3886 401408.0000
+weighted avg     0.8617  0.5183    0.5960 401408.0000

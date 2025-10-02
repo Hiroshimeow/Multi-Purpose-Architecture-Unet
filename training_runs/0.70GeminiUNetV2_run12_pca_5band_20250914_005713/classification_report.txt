@@ -1,0 +1,30 @@
+--- Final Training Report ---
+
+Run Name: GeminiUNetV2_run12_pca_5band
+Full Path: training_runs/GeminiUNetV2_run12_pca_5band_20250914_005713
+Training Duration: 0:11:16
+Completed Epochs: 77
+Best Validation mIoU: 0.7081
+
+--- Performance Benchmark ---
+- FPS: 244.63
+- Latency: 65.40 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8804, Dice = 0.9364
+- RoadLine                 : IoU = 0.6141, Dice = 0.7609
+- Vegetation               : IoU = 0.6776, Dice = 0.8078
+- Sky                      : IoU = 0.6533, Dice = 0.7903
+- NoDrivable               : IoU = 0.7152, Dice = 0.8339
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9359  0.9369    0.9364 3339139.0000
+RoadLine         0.8676  0.6777    0.7609  216170.0000
+Vegetation       0.8973  0.7345    0.8078 1170600.0000
+Sky              0.9798  0.6622    0.7903  408060.0000
+NoDrivable       0.7767  0.9003    0.8339 2442607.0000
+accuracy         0.8716  0.8716    0.8716       0.8716
+macro avg        0.8915  0.7823    0.8259 7576576.0000
+weighted avg     0.8791  0.8716    0.8706 7576576.0000

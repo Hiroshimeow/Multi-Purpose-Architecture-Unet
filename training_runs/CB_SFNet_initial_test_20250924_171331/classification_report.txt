@@ -1,0 +1,32 @@
+--- Final Training Report ---
+
+Run Name: CB_SFNet_initial_test
+Full Path: training_runs/CB_SFNet_initial_test_20250924_171331
+Training Duration: 0:04:18
+Completed Epochs: 50
+Best Validation mIoU: 0.7091
+
+--- Performance Benchmark ---
+- FPS: 653.46
+- Latency: 12.24 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 10.84
+- Efficiency (mIoU/GFLOPs): 0.0654
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8993, Dice = 0.9470
+- RoadLine                 : IoU = 0.6320, Dice = 0.7745
+- NoDrivable               : IoU = 0.6462, Dice = 0.7851
+- Vegetation               : IoU = 0.6636, Dice = 0.7978
+- Sky                      : IoU = 0.7045, Dice = 0.8266
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9404  0.9537    0.9470 3295841.0000
+RoadLine         0.9066  0.6760    0.7745  226471.0000
+NoDrivable       0.8775  0.7103    0.7851 1183684.0000
+Vegetation       0.9547  0.6852    0.7978  384246.0000
+Sky              0.7763  0.8839    0.8266 2486334.0000
+accuracy         0.8709  0.8709    0.8709       0.8709
+macro avg        0.8911  0.7818    0.8262 7576576.0000
+weighted avg     0.8764  0.8709    0.8695 7576576.0000

@@ -1,0 +1,59 @@
+run_name: unet_A5000_bs32_bf64
+base_output_dir: training_runs
+class_names:
+- Road (tarmac)
+- Road marks
+- Painted metal
+- Sky
+- Concrete/stone/brick
+model:
+    name: UNet
+    params:
+        in_channels: 25
+        num_classes: 5
+        bilinear: true
+        base_filters: 64
+data:
+    dir: Image_dataset
+    patching:
+        patch_size: 512
+        stride: 256
+    class_mapping:
+        1: 0
+        2: 1
+        4: 2
+        5: 3
+        6: 4
+        0: 0
+        3: 2
+        7: 2
+        9: 2
+        10: 4
+augmentation:
+    elastic_transform:
+        p: 0.5
+        alpha: 120
+        sigma: 6
+        alpha_affine: 25
+training:
+    batch_size: 16
+    num_epochs: 150
+    early_stopping_patience: 25
+optimizer:
+    name: AdamW
+    params:
+        lr: 0.0002
+        weight_decay: 0.0001
+scheduler:
+    name: CosineAnnealingLR
+    params:
+        T_max_epochs_offset: 0
+        eta_min: 1.0e-06
+loss:
+    name: WeightedCombinedLoss
+    boundary_weight:
+        w0: 10.0
+        sigma: 5.0
+    params:
+        alpha: 1.0
+        beta: 0.5
