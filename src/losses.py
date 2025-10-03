@@ -25,9 +25,6 @@ class DiceLoss(nn.Module):
         return 1. - dice_score.mean()
 
 class FocalLoss(nn.Module):
-    """
-    [NEW] Focal Loss for addressing class imbalance.
-    """
     def __init__(self, alpha=0.25, gamma=2.0, weight=None, reduction='mean'):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
@@ -37,11 +34,8 @@ class FocalLoss(nn.Module):
 
     def forward(self, logits, targets):
         device = logits.device
-        # Use reduction='none' to get per-element loss
         ce_loss = F.cross_entropy(logits, targets.long(), reduction='none', weight=self.weight.to(device) if self.weight is not None else None)
-        # pt is the probability of the correct class
         pt = torch.exp(-ce_loss)
-        # This is the core focal loss formula
         focal_loss = self.alpha * (1 - pt)**self.gamma * ce_loss
 
         if self.reduction == 'mean':
@@ -51,37 +45,58 @@ class FocalLoss(nn.Module):
         else:
             return focal_loss
 
-# --- Combined Loss Functions ---
+# --- Combined and Special Loss Functions ---
 
-class WeightedCombinedLoss(nn.Module):
-    def __init__(self, weight=None, alpha=1.0, beta=0.5):
-        super(WeightedCombinedLoss, self).__init__()
-        self.ce_loss = nn.CrossEntropyLoss(
-            weight=torch.FloatTensor(weight) if weight is not None else None,
-            reduction='none'
-        )
-        self.dice_loss = DiceLoss()
-        self.alpha = alpha
-        self.beta = beta
-
-    def forward(self, logits, targets, weight_map):
-        ce_pixel_loss = self.ce_loss(logits, targets.long())
-        weighted_ce_loss = (ce_pixel_loss * weight_map).mean()
-        dice = self.dice_loss(logits, targets)
-        return self.alpha * weighted_ce_loss + self.beta * dice
-    
 class CombinedLoss(nn.Module):
-    def __init__(self, weight=None, alpha=0.5, beta=0.5):
+    def __init__(self, weight=None, alpha=0.5, beta=0.5, **kwargs):
         super(CombinedLoss, self).__init__()
         self.ce_loss = nn.CrossEntropyLoss(weight=torch.FloatTensor(weight) if weight is not None else None)
         self.dice_loss = DiceLoss()
         self.alpha = alpha
         self.beta = beta
 
-    def forward(self, logits, targets):
+    def forward(self, model_output, targets):
+        # Handle dictionary input for compatibility
+        if isinstance(model_output, dict):
+            logits = model_output['segmentation']
+        else:
+            logits = model_output
+            
         ce = self.ce_loss(logits, targets.long())
         dice = self.dice_loss(logits, targets)
         return self.alpha * ce + self.beta * dice
+
+class PruningLoss(nn.Module):
+    """
+    A wrapper loss for channel pruning experiments.
+    Combines a base segmentation loss with an L1 penalty on channel weights.
+    """
+    def __init__(self, base_loss_name, base_loss_params, l1_lambda, **kwargs):
+        super().__init__()
+        self.l1_lambda = l1_lambda
+        # Create the base loss function, passing through kwargs like class_weights
+        self.base_loss = get_loss(name=base_loss_name, params=base_loss_params, **kwargs)
+
+    def forward(self, model_output, targets):
+        # The model is expected to return a dictionary
+        if not isinstance(model_output, dict) or 'segmentation' not in model_output or 'channel_weights' not in model_output:
+            raise TypeError(
+                "PruningLoss requires the model to return a dictionary "
+                "containing 'segmentation' and 'channel_weights'."
+            )
+
+        segmentation_logits = model_output['segmentation']
+        channel_weights = model_output['channel_weights']
+
+        # Calculate the primary segmentation loss
+        # The base loss now also needs to handle the dict, so we pass only the logits
+        segmentation_loss = self.base_loss(segmentation_logits, targets)
+
+        # Calculate L1 penalty on the absolute channel weights to encourage sparsity
+        l1_penalty = torch.norm(channel_weights, p=1)
+
+        # Return the combined loss
+        return segmentation_loss + self.l1_lambda * l1_penalty
 
 # --- Loss Factory ---
 def get_loss(name: str, params: dict, class_weights: np.ndarray = None, device: torch.device = None):
@@ -90,19 +105,19 @@ def get_loss(name: str, params: dict, class_weights: np.ndarray = None, device: 
     """
     print(f"   Initializing loss: {name}")
     
-    # Pass class weights to the loss function if they are provided
+    kwargs = {}
     if class_weights is not None:
-        # Ensure weight is a list for JSON serialization if needed, but convert to tensor for loss
-        params['weight'] = class_weights
+        kwargs['weight'] = class_weights
+    if device is not None:
+        kwargs['device'] = device
 
-    # Remove device from params if it exists, as it's not a standard loss parameter
-    params.pop('device', None)
-
-    if name == 'WeightedCombinedLoss':
-        return WeightedCombinedLoss(**params)
-    elif name == 'CombinedLoss':
-        return CombinedLoss(**params)
+    if name == 'CombinedLoss':
+        return CombinedLoss(**params, **kwargs)
     elif name == 'FocalLoss':
-        return FocalLoss(**params)
+        return FocalLoss(**params, **kwargs)
+    elif name == 'PruningLoss':
+        # For PruningLoss, params dict has a special structure.
+        # We pass the kwargs (weights, device) down to the base loss constructor.
+        return PruningLoss(**params, **kwargs)
     else:
         raise ValueError(f"Loss function '{name}' not recognized.")

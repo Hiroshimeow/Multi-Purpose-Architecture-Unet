@@ -21,7 +21,44 @@ class Trainer:
         self.scaler = torch.amp.GradScaler(enabled=(self.device.type == 'cuda'))
         self.start_epoch = 0
         self.best_miou = 0.0
+        self.gflops = 0.0
+        self.params_m = 0.0
+
+        # Calculate and store model stats once upon initialization
+        self._calculate_and_store_model_stats()
         
+    def _calculate_and_store_model_stats(self):
+        """Calculates and prints GFLOPs and total parameters, storing them in the instance."""
+        print("\n--- Calculating Model Statistics ---")
+        self.model.eval()
+        try:
+            patch_size = self.config.get('data', {}).get('patching', {}).get('patch_size', 224)
+            model_params = self.config.get('model', {}).get('params', {})
+            
+            # Determine in_channels safely
+            if 'num_selected_bands' in model_params and model_params['num_selected_bands'] is not None:
+                in_channels = model_params['num_selected_bands']
+            elif 'in_channels' in model_params:
+                in_channels = model_params['in_channels']
+            else:
+                print("Warning: Could not determine 'in_channels' for stats calculation. Falling back to 3.")
+                in_channels = 3
+
+            dummy_input = torch.randn(1, in_channels, patch_size, patch_size).to(self.device)
+            
+            macs, params = profile(self.model, inputs=(dummy_input,), verbose=False)
+            
+            self.gflops = (macs * 2) / 1e9  # Convert MACs to GFLOPs
+            self.params_m = params / 1e6  # Convert to Millions
+            
+            print(f"✓ Model Stats: {self.gflops:.2f} GFLOPs, {self.params_m:.2f} M Params")
+
+        except Exception as e:
+            print(f"  - Error during model stats calculation: {e}. Stats will be 0.")
+            self.gflops = 0.0
+            self.params_m = 0.0
+        self.model.train() # Return model to training mode
+
     def _load_state(self):
         if self.manager.checkpoint_exists("latest_checkpoint.pth"):
             state = self.manager.load_checkpoint("latest_checkpoint.pth")
@@ -60,7 +97,6 @@ class Trainer:
                 self.best_miou = val_miou
                 patience_counter = 0
                 print(f"✨ New best mIoU: {val_miou:.4f}. Saving model and prediction samples...")
-                # FIX: Logic lưu sample vẫn hoạt động bình thường
                 if val_samples:
                     self.manager.save_prediction_samples(val_samples)
             else:
@@ -86,7 +122,6 @@ class Trainer:
         self.model.train()
         total_loss = 0.0
         pbar = tqdm(self.train_loader, desc="Training", leave=False)
-        # FIX: Dataloader chỉ trả về images và masks
         for images, masks in pbar:
             images = images.to(self.device, non_blocking=True)
             masks = masks.to(self.device, non_blocking=True)
@@ -95,7 +130,6 @@ class Trainer:
             
             with torch.amp.autocast(device_type=self.device.type, dtype=torch.float16, enabled=(self.device.type == 'cuda')):
                 outputs = self.model(images)
-                # FIX: Gọi hàm loss chỉ với outputs và masks
                 loss = self.criterion(outputs, masks)
             
             self.scaler.scale(loss).backward()
@@ -105,9 +139,6 @@ class Trainer:
             total_loss += loss.item()
             pbar.set_postfix(loss=f"{loss.item():.4f}")
             
-            # Extract segmentation logits from the dictionary output for metrics
-            seg_logits = outputs['segmentation']
-            preds = torch.argmax(seg_logits, dim=1)
         return total_loss / len(self.train_loader)
     
     def _evaluate(self, num_samples_to_save=8):
@@ -118,20 +149,15 @@ class Trainer:
         
         with torch.no_grad():
             pbar = tqdm(self.val_loader, desc="Validating", leave=False)
-            # FIX: Dataloader chỉ trả về images và masks
             for images, masks in pbar:
                 images = images.to(self.device, non_blocking=True)
                 masks = masks.to(self.device, non_blocking=True)
                 
                 with torch.amp.autocast(device_type=self.device.type, dtype=torch.float16, enabled=(self.device.type == 'cuda')):
                     outputs = self.model(images)
-                    # FIX: Gọi hàm loss chỉ với outputs và masks
                     loss = self.criterion(outputs, masks)
                 
                 total_loss += loss.item()
-                # The model returns a tuple, and the first element is a list of tensors.
-                # The first tensor in the list is the main output.
-        # Extract segmentation logits from the dictionary output
                 seg_logits = outputs['segmentation']
                 preds = torch.argmax(seg_logits, dim=1)
                 all_preds.append(preds.cpu().numpy())
@@ -141,8 +167,6 @@ class Trainer:
                     batch_size = images.shape[0]
                     for i in range(batch_size):
                         if len(saved_samples) < num_samples_to_save:
-                            # Cần kiểm tra image đã được normalize kiểu gì để un-normalize
-                            # Hiện tại, chỉ lưu ảnh đã normalize để visualization
                             img_np = images[i].permute(1, 2, 0).cpu().numpy()
                             mask_np = masks[i].cpu().numpy()
                             pred_np = preds[i].cpu().numpy()
@@ -165,15 +189,17 @@ class Trainer:
         self.model.eval()
         
         try:
-            # FIX: Unpack 2 giá trị
             dummy_input, _ = next(iter(self.val_loader))
             dummy_input = dummy_input.to(self.device)
         except StopIteration:
             print("Warning: Validation loader is empty. Cannot benchmark. Using random data.")
             bs = self.config['training']['batch_size']
-            c_param = 'selected_channels' if 'selected_channels' in self.config['model']['params'] else 'in_channels'
-            c = self.config['model']['params'][c_param]
-            h = w = self.config['data']['patching']['patch_size']
+            model_params = self.config.get('model', {}).get('params', {})
+            if 'num_selected_bands' in model_params and model_params['num_selected_bands'] is not None:
+                c = model_params['num_selected_bands']
+            else:
+                c = model_params.get('in_channels', 3)
+            h = w = self.config.get('data', {}).get('patching', {}).get('patch_size', 224)
             dummy_input = torch.randn(bs, c, h, w, device=self.device)
 
         print(f"Input tensor shape for benchmark: {dummy_input.shape}")
@@ -207,50 +233,23 @@ class Trainer:
         print("\n4. Final Evaluation and Analysis...")
         print("   Loading best model for detailed report...")
         
-        # Sửa lỗi: Cần load model state dict từ checkpoint, không phải toàn bộ checkpoint
         checkpoint = self.manager.load_checkpoint(filename="best_model.pth")
         if checkpoint:
-             # best_model.pth chỉ lưu state_dict
             self.model.load_state_dict(torch.load(self.manager.models_dir / "best_model.pth", map_location=self.device))
         else:
             print("Warning: best_model.pth not found. Using the last model state.")
 
-        # --- TÍNH TOÁN GFLOPS ---
-        try:
-            patch_size = self.config.get('data', {}).get('patching', {}).get('patch_size', 224)
-            
-            # Xác định in_channels một cách an toàn hơn
-            model_params = self.config.get('model', {}).get('params', {})
-            if 'selected_channels' in model_params and model_params['selected_channels'] is not None:
-                in_channels = model_params['selected_channels']
-            elif 'in_channels' in model_params:
-                in_channels = model_params['in_channels']
-            else:
-                # Fallback hoặc raise error nếu không tìm thấy
-                print("Warning: Could not determine 'in_channels' for GFLOPs calculation. Falling back to 3.")
-                in_channels = 3
-
-            print(f"  - Calculating GFLOPs with input shape: (1, {in_channels}, {patch_size}, {patch_size})")
-            dummy_input = torch.randn(1, in_channels, patch_size, patch_size).to(self.device)
-            
-            flops, _ = profile(self.model, inputs=(dummy_input,), verbose=False)
-            gflops = flops / 1e9
-            print(f"  - Calculated GFLOPs: {gflops:.2f}")
-        except Exception as e:
-            print(f"  - Error during GFLOPs calculation: {e}. Setting GFLOPs to 0.")
-            gflops = 0.0
-        # --- KẾT THÚC TÍNH TOÁN GFLOPS ---
-
+        # Get performance metrics (FPS, Latency)
         performance_metrics = self.benchmark_performance()
-        performance_metrics['gflops'] = gflops
+        
+        # Add pre-calculated stats to the metrics dictionary
+        performance_metrics['gflops'] = self.gflops
+        performance_metrics['params_m'] = self.params_m
 
         all_preds, all_trues = [], []
         with torch.no_grad():
-            # FIX: Unpack 2 giá trị
             for images, masks in tqdm(self.val_loader, desc="Final Evaluation"):
                 outputs = self.model(images.to(self.device))
-                # The model returns a tuple, and the first element is a list of tensors.
-                # The first tensor in the list is the main output.
                 main_output = outputs['segmentation']
                 all_preds.append(torch.argmax(main_output, dim=1).cpu().numpy())
                 all_trues.append(masks.numpy())
@@ -259,8 +258,7 @@ class Trainer:
         flat_trues = np.concatenate([t.flatten() for t in all_trues])
         
         # Calculate efficiency
-        gflops = performance_metrics.get('gflops', 0)
-        efficiency = self.best_miou / gflops if gflops > 0 else 0
+        efficiency = self.best_miou / self.gflops if self.gflops > 0 else 0
         performance_metrics['efficiency'] = efficiency
 
         self.manager.generate_final_report(self.best_miou, flat_preds, flat_trues, self.config, performance_metrics)

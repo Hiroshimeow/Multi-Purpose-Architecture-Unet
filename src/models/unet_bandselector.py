@@ -29,7 +29,8 @@ from .attention_modules import BandSelector
 class UnetBandS(nn.Module):
     def __init__(self, in_channels, num_classes, num_selected_bands=5, **kwargs):
         super().__init__()
-        self.band_selector = BandSelector(original_in_channels=in_channels, num_selected_bands=num_selected_bands)
+        # Updated to use the new parameter names for LearnableBandSelector
+        self.band_selector = BandSelector(in_channels=in_channels, num_bands_to_select=num_selected_bands)
         self.unet = UNetBase(
             in_channels=num_selected_bands, 
             num_classes=num_classes,
@@ -38,5 +39,7 @@ class UnetBandS(nn.Module):
         )
 
     def forward(self, x):
-        x = self.band_selector(x)
-        return self.unet(x)
+        selected_bands = self.band_selector(x)
+        # The trainer now expects a dictionary output
+        segmentation_output = self.unet(selected_bands)
+        return {'segmentation': segmentation_output}

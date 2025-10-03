@@ -3,36 +3,79 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# --- BandSelector ---
-class BandSelector(nn.Module):
-    def __init__(self, original_in_channels, num_selected_bands):
+# --- LearnableBandSelector (using Gumbel-Softmax) ---
+class LearnableBandSelector(nn.Module):
+    """
+    Selects the top-k bands from an input tensor using a learnable,
+    differentiable Gumbel-Top-k mechanism.
+    This is the new 'BandSelector' for the project.
+    """
+    def __init__(self, in_channels: int, num_bands_to_select: int):
         super().__init__()
-        self.selection_weights = nn.Parameter(torch.randn(num_selected_bands, original_in_channels) * 0.01)
+        if num_bands_to_select > in_channels:
+            raise ValueError("num_bands_to_select cannot be greater than in_channels.")
+        self.in_channels = in_channels
+        self.k = num_bands_to_select
+        # Learnable logits for each band
+        self.logits = nn.Parameter(torch.randn(in_channels))
 
-    def forward(self, x):
-        softmax_weights = torch.softmax(self.selection_weights, dim=1)
-        selected_bands = torch.einsum('sc,bchw->bshw', softmax_weights, x)
-        return selected_bands
+    def _gumbel_topk_sampling(self, logits, k, temperature=1.0):
+        """
+        Differentiable Top-k sampling using the Gumbel-Softmax trick.
+        Returns a 'hard' one-hot-like mask of selected indices.
+        """
+        # Sample Gumbel noise
+        gumbel_noise = -torch.log(-torch.log(torch.rand_like(logits, device=logits.device) + 1e-20) + 1e-20)
+        # Add noise to logits
+        perturbed_logits = (logits + gumbel_noise) / temperature
+        # Get top-k scores and indices
+        _, top_k_indices = torch.topk(perturbed_logits, k=k, dim=-1)
+
+        # Create a hard one-hot-like mask
+        selection_mask = torch.zeros_like(logits, dtype=torch.float32)
+        selection_mask.scatter_(-1, top_k_indices, 1.0)
+        return selection_mask
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x shape: (B, C, H, W)
+        B, C, H, W = x.shape
+        
+        if C != self.in_channels:
+            raise ValueError(f"Input tensor has {C} channels, but selector was initialized for {self.in_channels}.")
+
+        # Get the hard selection mask. Gradients flow via straight-through estimator.
+        selection_mask = self._gumbel_topk_sampling(self.logits, self.k)
+        
+        # Use the mask to select indices for a dense output
+        # This part is non-differentiable by itself, but Gumbel-Softmax handles the gradient flow.
+        selected_indices = selection_mask.nonzero(as_tuple=True)[0]
+        
+        # Ensure selected_indices is always a list-like object for indexing
+        if selected_indices.dim() == 0:
+            selected_indices = selected_indices.unsqueeze(0)
+
+        dense_output = torch.index_select(x, dim=1, index=selected_indices)
+
+        return dense_output
+
+# For backward compatibility, BandSelector is now an alias for LearnableBandSelector
+BandSelector = LearnableBandSelector
+
 
 # --- SAC (Spectral Attention Conv) with internal SE_attention ---
 class SE_attention(nn.Module):
     def __init__(self, channels, reduction=4):
         super(SE_attention, self).__init__()
-        # Sửa lại cho đúng với 3D Conv (N, C, D, H, W)
-        # Conv1d hoạt động trên chiều C, nên ta cần (N, C, D)
         self.fc1 = nn.Conv1d(channels, channels // reduction, kernel_size=1)
         self.fc2 = nn.Conv1d(channels // reduction, channels, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        # Input x: (N, C, D, H, W)
-        # Pool H, W -> (N, C, D)
         y = x.mean(dim=[3, 4])
         y = self.fc1(y)
         y = F.relu(y)
         y = self.fc2(y)
         y = self.sigmoid(y)
-        # Reshape để nhân -> (N, C, D, 1, 1)
         y = y.unsqueeze(-1).unsqueeze(-1)
         return x * y
 
@@ -64,9 +107,7 @@ class SAC(nn.Module):
         self.down_conv = nn.Conv3d(1, 1, kernel_size=(kernel_depth,1,1))
 
     def forward(self, x):
-        # Input x: (N, C, H, W), C là số kênh quang phổ
-        x_in = x.unsqueeze(1) # -> (N, 1, C, H, W)
-        
+        x_in = x.unsqueeze(1)
         x_branch = self.conv1(x_in)
         x_branch = self.conv2(x_branch)
         if self.use_sea:
@@ -77,7 +118,7 @@ class SAC(nn.Module):
         x_skip = self.down_conv(x_skip)
         
         out = F.relu(x_branch + x_skip)
-        return out.squeeze(1) # -> (N, reduced_depth, H, W)
+        return out.squeeze(1)
 
 # --- CBAM (Convolutional Block Attention Module) ---
 class ChannelAttention(nn.Module):

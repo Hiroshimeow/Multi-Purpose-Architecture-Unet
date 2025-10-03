@@ -58,7 +58,7 @@ class UNetBase(nn.Module):
             # Số kênh đầu ra của khối Up này
             out_ch = initial_filters * (2**i)
             self.decoders.append(
-                Up(up_in_channels, up_out_channels, bilinear)
+                Up(up_in_channels, up_out_channels, out_ch, bilinear)
             )
 
         self.outc = OutConv(initial_filters, num_classes)

@@ -168,8 +168,12 @@ class ExperimentManager:
         full_report_str += f"Full Path: {self.output_dir}\n"
         full_report_str += f"Training Duration: {str(duration).split('.')[0]}\n"
         full_report_str += f"Completed Epochs: {len(self.history_df)}\n"
-        full_report_str += f"Best Validation mIoU: {best_miou:.4f}\n\n"
+        full_report_str += f"Best Validation mIoU: {best_miou:.4f}\n"
         
+        # Add Params (M) right below Best Validation mIoU
+        params_m = performance.get('params_m', 0)
+        full_report_str += f"Params (M): {params_m:.2f}M\n\n"
+
         full_report_str += "--- Performance Benchmark ---\n"
         fps = performance.get('fps', 0)
         latency = performance.get('latency_ms', float('inf'))

@@ -9,8 +9,11 @@ from .unet_bcd import UnetBcd
 from .unet_depthwiseseparable import UnetDepthwiseSeparable
 from .unet_deepsupervision import UnetDeepSupervision
 from .asran_network import ASRAN
-from .cbsfnet import CB_SFNet, ASRAN_LBS
+from .asran_lbs import ASRAN_LBS
 from .vit_unet import ViT_UNet
+from .unet_base import UNetBase
+from .unet_prunable import UnetPrunable
+from .cbsfnet import CB_SFNet # Added for pruning experiment
 
 # --- Import model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI) ---
 # import sys
@@ -39,6 +42,7 @@ def get_model(name: str, params: dict):
         'CB_SFNet': CB_SFNet,
         'ASRAN_LBS': ASRAN_LBS,
         'ViT_UNet': ViT_UNet,
+        'UnetPrunable': UnetPrunable,
 
         # Model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI)
         # 'GeminiUNetV2': GeminiUNetV2,

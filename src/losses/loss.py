@@ -48,6 +48,28 @@ class FocalLoss(nn.Module):
         else:
             return focal_loss
 
+class PruningLoss(nn.Module):
+    def __init__(self, base_loss, l1_lambda=0.0001):
+        super(PruningLoss, self).__init__()
+        self.base_loss = base_loss
+        self.l1_lambda = l1_lambda
+
+    def forward(self, outputs, targets):
+        # The model returns a dictionary, so we access the keys directly
+        seg_outputs = outputs['segmentation']
+        channel_weights = outputs['channel_weights']
+        
+        # Calculate the base segmentation loss
+        segmentation_loss = self.base_loss(seg_outputs, targets)
+        
+        # Calculate L1 penalty on channel weights
+        l1_penalty = torch.norm(channel_weights, p=1)
+        
+        # Combine the losses
+        total_loss = segmentation_loss + self.l1_lambda * l1_penalty
+        
+        return total_loss
+
 class GeminiCombinedLoss(nn.Module):
     def __init__(self, class_weights, device, focal_w=0.4, dice_w=0.6, ds_weights=None, **kwargs):
         super(GeminiCombinedLoss, self).__init__()

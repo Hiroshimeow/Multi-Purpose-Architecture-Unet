@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 
 # Import loss classes from their respective files
-from .loss import GeminiCombinedLoss
+from .loss import GeminiCombinedLoss, PruningLoss
 from .cbsfnet_loss import CBSFNetLoss
 from .base_losses import DiceLoss, CombinedLoss
 
@@ -76,5 +76,17 @@ def get_loss(name: str, params: dict, class_weights: np.ndarray, device):
     elif name == 'CBSFNetLoss':
         # Pass device and class_weights directly as they are not in the params dict
         return CBSFNetLoss(class_weights=class_weights, device=device, **params)
+    elif name == 'PruningLoss':
+        base_loss_name = params.get('base_loss_name')
+        base_loss_params = params.get('base_loss_params', {})
+        l1_lambda = params.get('l1_lambda', 0.0001)
+        
+        if not base_loss_name:
+            raise ValueError("PruningLoss requires 'base_loss_name' in its parameters.")
+            
+        # Recursively call get_loss to create the base loss instance
+        base_loss = get_loss(base_loss_name, base_loss_params, class_weights, device)
+        
+        return PruningLoss(base_loss=base_loss, l1_lambda=l1_lambda)
     else:
         raise ValueError(f"Loss function '{name}' not recognized.")
