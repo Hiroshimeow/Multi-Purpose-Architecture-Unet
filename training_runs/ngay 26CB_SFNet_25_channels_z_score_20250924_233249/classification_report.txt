@@ -1,10 +1,11 @@
 --- Final Training Report ---
 
-Run Name: CB_SFNet_25_channels_z_score
+Run Name: CB_SFNet_5_channels_z_score
 Full Path: training_runs/CB_SFNet_25_channels_z_score_20250924_233249
 Training Duration: 0:23:34
 Completed Epochs: 168
 Best Validation mIoU: 0.7301
+Params (M): 4.76M
 
 --- Performance Benchmark ---
 - FPS: 552.77

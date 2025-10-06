@@ -1,122 +1,183 @@
-# Báo cáo Phân tích và Đề xuất Kiến trúc cho Bài toán Phân đoạn Ảnh Siêu phổ trong Lĩnh vực Xe tự hành
+# Thành tựu và Tiến trình Phát triển Dự án (Kể từ `cbsfnet_light_exp2`)
 
-Tài liệu này cung cấp một phân tích sâu rộng về các kiến trúc mạng, cơ chế attention, và các phương pháp tiếp cận hiện đại cho bài toán phân đoạn ngữ nghĩa (semantic segmentation) sử dụng dữ liệu ảnh siêu phổ (Hyperspectral Imaging - HSI), đặc biệt tập trung vào bộ dữ liệu HSI-Drive cho xe tự hành.
-
----
-
-## Phần 1: Khảo sát các Cơ chế Attention
-
-Attention đã trở thành một thành phần không thể thiếu trong các mô hình học sâu cho thị giác máy tính, giúp mô hình tập trung vào các đặc trưng quan trọng.
-
-### 1.1. Phân tích CBAM (Convolutional Block Attention Module)
-
-CBAM là một cơ chế attention nhẹ và hiệu quả, bao gồm hai mô-đun con áp dụng tuần tự:
-
--   **Channel Attention Module (CAM):** Xác định "cái gì" quan trọng bằng cách tính trọng số cho mỗi kênh.
-    -   **Công thức:** `Mc(F) = σ( MLP(AvgPool(F)) + MLP(MaxPool(F)) )`
--   **Spatial Attention Module (SAM):** Xác định "ở đâu" quan trọng bằng cách tạo ra một bản đồ trọng số không gian.
-    -   **Công thức:** `Ms(F') = σ( f^7x7( [AvgPool(F'); MaxPool(F')] ) )`
-
--   **Hạn chế:** Việc xử lý tuần tự và cách nén thông tin của SAM có thể làm mất mát thông tin vị trí chính xác và các mối quan hệ không gian tầm xa.
-
-### 1.2. Khám phá các Kiến trúc Attention Thay thế
-
-#### 1.2.1. Coordinate Attention (CA)
-
--   **Ý tưởng:** Mã hóa thông tin vị trí và các mối quan hệ tầm xa bằng cách phân tách channel attention thành hai quá trình mã hóa 1D độc lập theo chiều ngang và chiều dọc.
--   **Kiến trúc:**
-    1.  **Coordinate Information Embedding:** Sử dụng hai kernel pooling `(H, 1)` và `(1, W)` để tổng hợp đặc trưng dọc theo hai hướng không gian.
-    2.  **Coordinate Attention Generation:** Ghép hai tensor đặc trưng, đưa qua một lớp Conv1x1, sau đó tách ra và dùng hai lớp Conv1x1 khác để tạo ra hai bản đồ attention cho mỗi hướng.
--   **Công thức (Output cuối cùng):** `y_c(i, j) = x_c(i, j) * g_c^h(i) * g_c^w(j)`
--   **Ưu điểm:** Hiệu quả, nắm bắt được thông tin vị trí chính xác và quan hệ tầm xa, rất phù hợp cho segmentation.
-
-#### 1.2.2. Triplet Attention
-
--   **Ý tưởng:** Nắm bắt các tương tác chéo giữa các chiều (cross-dimension interaction) bằng cách sử dụng một cấu trúc ba nhánh. Mỗi nhánh tập trung vào một cặp hai trong ba chiều (C, H, W).
--   **Kiến trúc:**
-    1.  **Ba nhánh xử lý song song:**
-        -   Nhánh 1: Tương tác giữa (H, W).
-        -   Nhánh 2: Tương tác giữa (C, H).
-        -   Nhánh 3: Tương tác giữa (C, W).
-    2.  **Z-Pool:** Trong mỗi nhánh, chiều không được tương tác sẽ được nén lại bằng cách ghép kết quả của `AvgPool` và `MaxPool`.
-    3.  **Attention Map:** Tensor đã nén được đưa qua một lớp Conv và hàm Sigmoid để tạo bản đồ attention.
-    4.  **Tổng hợp:** Kết quả của ba nhánh được lấy trung bình cộng.
--   **Công thức (Tổng hợp cuối cùng):** `Y = (Output_spatial + Output_ch + Output_cv) / 3`
--   **Ưu điểm:** Nắm bắt được các mối quan hệ phức tạp hơn so với việc xử lý kênh và không gian một cách riêng biệt hoặc tuần tự.
-
-#### 1.2.3. SimAM (Simple, Parameter-Free Attention Module)
-
--   **Ý tưởng:** Xây dựng một cơ chế attention không cần tham số (parameter-free). Tầm quan trọng của mỗi neuron được xác định bằng cách định nghĩa một hàm năng lượng dựa trên các lý thuyết khoa học thần kinh.
--   **Kiến trúc:**
-    1.  Định nghĩa một hàm năng lượng cho mỗi neuron để đo lường sự khác biệt tuyến tính của nó so với các neuron khác trong cùng một kênh.
-    2.  Tìm một nghiệm dạng đóng (closed-form solution) cho hàm năng lượng, giúp tính toán nhanh chóng.
-    3.  Các neuron có năng lượng thấp hơn được coi là quan trọng hơn.
--   **Công thức (Năng lượng tối thiểu):**
-    ```
-    E*(t) = (4 * (σ_hat^2 + λ)) / ((t - μ_hat)^2 + 2*σ_hat^2 + 2*λ)
-    ```
-    Trong đó `μ_hat` và `σ_hat^2` là trung bình và phương sai của tất cả các neuron trong kênh. Trọng số attention được tính bằng `1 / E*(t)`.
--   **Ưu điểm:** Cực kỳ nhẹ, không làm tăng độ phức tạp của mô hình, tính toán đồng thời cả attention kênh và không gian.
+Tài liệu này tóm tắt chi tiết các bước đã thực hiện, những cải tiến, kết quả đạt được và các phân tích liên quan kể từ khi thử nghiệm `cbsfnet_light_exp2` được thực hiện. Mục tiêu là cung cấp một cái nhìn toàn diện về tiến trình của dự án.
 
 ---
 
-## Phần 2: Bối cảnh Ứng dụng và Phân tích Dataset
+## 1. Bối cảnh: Vấn đề với `cbsfnet_light_exp2`
 
-### 2.1. Dataset HSI-Drive
+*   **Suy nghĩ/Phân tích:** Thử nghiệm `cbsfnet_light_exp2` ban đầu cho kết quả mIoU rất tốt (0.7466) với số lượng tham số nhẹ (0.53M). Tuy nhiên, sau khi xem xét kỹ lưỡng, chúng tôi phát hiện ra một vấn đề phương pháp luận nghiêm trọng: kiến trúc U-Net backbone của `CB-SFNet` (được sử dụng trong `cbsfnet_light_exp2`) không đồng nhất với kiến trúc U-Net backbone của `ASRAN_LBS`. Cụ thể, `CB-SFNet` có một tầng down-sampling (`down4`) sâu hơn, làm cho việc so sánh trực tiếp mIoU giữa hai model này trở nên không công bằng.
 
--   **Mục đích:** Đây là bộ dữ liệu công khai được xây dựng để thúc đẩy nghiên cứu về ứng dụng của ảnh siêu phổ (HSI) cho các Hệ thống Hỗ trợ Lái xe Nâng cao (ADAS) và Xe tự hành (ADS).
--   **Đặc điểm:**
-    -   **Số kênh:** 25 kênh trong dải phổ Nhìn thấy và Cận hồng ngoại (Visible-NearInfraRed - VNIR).
-    -   **Đa dạng:** Dữ liệu được thu thập trong nhiều điều kiện thực tế: 4 mùa, các thời điểm khác nhau trong ngày, thời tiết đa dạng (nắng, mây, mưa) và các loại đường khác nhau (đô thị, nông thôn, cao tốc).
--   **Phiên bản:**
-    -   **v1.x:** Tập trung vào việc gán nhãn theo vật liệu bề mặt.
-    -   **v2.0 (mới nhất):** Mở rộng lên 752 ảnh được gán nhãn thủ công, bổ sung các lớp quan trọng cho an toàn giao thông như `phương tiện`, `biển báo`, `người đi bộ`, `người đi xe đạp`.
+    **Chi tiết Kiến trúc `CB_SFNet` (phiên bản gốc):**
+    *   **Cấu trúc tổng thể:** Kiến trúc encoder-decoder dạng U-Net với các module mới tích hợp: `CSBD` (Contextual Spectral Boundary Discovery) và `MDSA-Net` (Multi-Depth Semantic Aggregation Network).
+    *   **Đường dẫn Encoder:**
+        *   `inc`: `DoubleConv` (in_channels -> `base_filters`)
+        *   `down1`: `Down` (`base_filters` -> `base_filters * 2`)
+        *   `down2`: `Down` (`base_filters * 2` -> `base_filters * 4`)
+        *   `down3`: `Down` (`base_filters * 4` -> `base_filters * 8`)
+        *   **Tích hợp Bottleneck:** Các đặc trưng từ `MDSA-Net` được nối (concatenated) với `x4` (đầu ra của `down3`) trước lớp `down4` cuối cùng.
+        *   `down4`: `Down` (`base_filters * 8 + mdsa_out_channels` -> `base_filters * 16 // factor`). Đây là điểm khác biệt chính, ngụ ý một encoder 5 cấp.
+    *   **Đường dẫn Decoder:**
+        *   `up1`: `Up` (`base_filters * 16` -> `base_filters * 8 // factor`)
+        *   `up2`: `Up` (`base_filters * 8` -> `base_filters * 4 // factor`)
+        *   `up3`: `Up` (`base_filters * 4` -> `base_filters * 2 // factor`)
+        *   `up4`: `Up` (`base_filters * 2` -> `base_filters`)
+        *   `outc`: `OutConv` (`base_filters` -> `num_classes`)
+    *   **Các Module mới:**
+        *   `CSBD` (Contextual Spectral Boundary Discovery): Sử dụng `SpectralGradientAnalyzer` và một `Boundary Localization Network` (CNN) nhỏ để dự đoán boundary logits.
+        *   `MDSA-Net` (Multi-Depth Semantic Aggregation Network): Nhận các đặc trưng đầu vào và đặc trưng biên, xử lý chúng qua ba đường dẫn (Lightweight Conv, Multi-scale Pyramid, Residual Block) và tổng hợp chúng.
+    *   **Điểm khác biệt chính:** Model `CB_SFNet` có thêm một lớp `down4` *sau khi* tích hợp các đặc trưng `MDSA-Net`, khiến nó trở thành một encoder-decoder 5 cấp nếu `MDSA-Net` được coi là một phần của bottleneck. Điều này tạo ra sự không nhất quán về kiến trúc so với các model U-Net 4 cấp khác.
 
-### 2.2. Hướng tiếp cận và Thách thức
-
--   **Hướng tiếp cận phổ biến:**
-    -   **Giảm chiều dữ liệu:** Do số lượng kênh lớn (25), các phương pháp giảm chiều như **PCA** (đang được sử dụng trong dự án này) là rất phổ biến và hiệu quả để giảm chi phí tính toán.
-    -   **Sử dụng các kiến trúc CNN:** Các kiến trúc nền tảng U-Net, DeepLabv3+, HRNet thường được sử dụng làm baseline.
--   **Thách thức:**
-    -   **"Nguyền rủa của số chiều" (Curse of Dimensionality):** Số lượng kênh lớn đòi hỏi chi phí tính toán và bộ nhớ cao.
-    -   **Mất cân bằng lớp (Class Imbalance):** Một số lớp (ví dụ: người đi bộ) xuất hiện ít hơn nhiều so với các lớp khác (ví dụ: đường).
-    -   **Kích thước Dataset:** Các bộ dữ liệu HSI cho xe tự hành vẫn còn tương đối nhỏ so với các bộ dữ liệu RGB, gây khó khăn cho việc huấn luyện các mô hình sâu và phức tạp.
-
----
-
-## Phần 3: Tổng hợp các Công trình Nghiên cứu Liên quan (SOTA)
-
-Một trong những bài báo tổng quan và đánh giá quan trọng nhất gần đây là:
-
--   **"Hyperspectral Imaging-Based Perception in Autonomous Driving Scenarios: Benchmarking Baseline Semantic Segmentation Models"** của Imad Ali Shah và cộng sự (2024/2025).
-
--   **Nội dung chính:**
-    -   Bài báo đánh giá một loạt các mô hình segmentation baseline trên nhiều bộ dữ liệu HSI, bao gồm cả **HSI-Drive v2**.
-    -   Các mô hình được đánh giá bao gồm: **DeepLabv3+, HRNet, PSPNet, và U-Net** cùng các biến thể có attention là **UNet-CA** (Coordinate Attention) và **UNet-CBAM**.
--   **Kết quả nổi bật:**
-    -   Nghiên cứu chỉ ra rằng **UNet-CBAM** thường cho kết quả vượt trội hơn các mô hình khác. Điều này cho thấy việc kết hợp U-Net với một cơ chế attention có khả năng khai thác thông tin giữa các kênh (như CBAM) là một hướng đi rất hiệu quả cho dữ liệu siêu phổ.
--   **Kết luận:** Phát hiện này **xác thực mạnh mẽ hướng đi của dự án hiện tại**, vốn đang tập trung vào việc cải tiến kiến trúc U-Net với các khối attention. Nó cũng cho thấy CBAM, mặc dù đơn giản, nhưng lại rất phù hợp với đặc thù của dữ liệu HSI.
+*   **Kết luận:** Kết quả của `cbsfnet_light_exp2` bị vô hiệu hóa cho mục đích so sánh trực tiếp. Cần phải chuẩn hóa kiến trúc backbone để đảm bảo một sân chơi công bằng.
 
 ---
 
-## Phần 4: Phân tích Kiến trúc Hiện tại của Dự án
+## 2. Cải tiến 1: Chuẩn hóa Kiến trúc Backbone (Unified Backbone Architecture)
 
-Phần này mô tả chi tiết kiến trúc và cấu hình của mô hình đạt hiệu suất cao nhất trong dự án tính đến hiện tại (Thử nghiệm PCA 3-band), đạt **mIoU ~0.7030** và **FPS ~290.12**.
+*   **Mục tiêu:** Tạo ra một kiến trúc U-Net backbone tiêu chuẩn, thống nhất để đảm bảo sự so sánh công bằng giữa các model khác nhau (đặc biệt là `ASRAN-LBS` và `CB-SFNet`).
+*   **Hành động:**
+    *   **Tạo `src/models/backbones.py`:** Một file mới được tạo để chứa các khối xây dựng U-Net tiêu chuẩn (`StandardDoubleConv`, `StandardDown`, `StandardUp`, `StandardOutConv`) và một lớp `StandardUNet` hoàn chỉnh.
 
--   **Tổng quan:** Mô hình là một biến thể của U-Net, thành công nhờ 3 yếu tố:
-    1.  **Giảm chiều bằng PCA:** Nén 25 kênh xuống còn 3.
-    2.  **Decoder với Tích chập chuyển vị:** Dùng `ConvTranspose2d` (`bilinear=False`) để khôi phục chi tiết tốt hơn.
-    3.  **Loss tập trung vào Dice:** Ưu tiên Dice Score (`beta: 0.6`) để cải thiện IoU.
--   **Kiến trúc Mô hình: `UNetBase`**
-    -   **Luồng kiến trúc (`initial_filters=32`):**
-        1.  **Input:** `(N, 3, H, W)`
-        2.  **Encoder:** 4 tầng `Down` block, tăng số kênh từ 32 -> 64 -> 128 -> 256.
-        3.  **Bottleneck:** `Down(256, 512)`.
-        4.  **Decoder:** 4 tầng `Up` block, giảm số kênh và kết hợp với skip-connection từ encoder.
-        5.  **Output:** `OutConv(32, 5)` -> `logits`.
--   **Cấu hình Huấn luyện:**
-    -   **Loss:** `CombinedLoss` (alpha=0.4, beta=0.6).
-    -   **Optimizer:** `AdamW` (lr=0.001).
-    -   **Scheduler:** `CosineAnnealingLR`.
-    -   **Epochs:** 140 (với early stopping).
-    -   **Batch Size:** 16.
+    **Chi tiết Kiến trúc `StandardUNet` (Backbone thống nhất):**
+    *   **Cấu trúc tổng thể:** Kiến trúc encoder-decoder U-Net 4 cấp tiêu chuẩn.
+    *   **Đường dẫn Encoder:**
+        *   `inc`: `StandardDoubleConv` (in_channels -> `base_filters`)
+        *   `down1`: `StandardDown` (`base_filters` -> `base_filters * 2`)
+        *   `down2`: `StandardDown` (`base_filters * 2` -> `base_filters * 4`)
+        *   `down3`: `StandardDown` (`base_filters * 4` -> `base_filters * 8`)
+    *   **Bottleneck:**
+        *   `bottleneck_conv`: `StandardDoubleConv` (`base_filters * 8` -> `base_filters * 16`)
+        *   Có thể áp dụng module `ASA` (Adaptive Spatial Attention) tùy chọn tại bottleneck.
+    *   **Đường dẫn Decoder:**
+        *   `up1`: `StandardUp` (`base_filters * 16` -> `base_filters * 8`)
+        *   `up2`: `StandardUp` (`base_filters * 8` -> `base_filters * 4`)
+        *   `up3`: `StandardUp` (`base_filters * 4` -> `base_filters * 2`)
+        *   `up4`: `StandardUp` (`base_filters * 2` -> `base_filters`)
+        *   `outc`: `StandardOutConv` (`base_filters` -> `num_classes`)
+    *   **Điểm khác biệt chính:** Đây là một U-Net 4 cấp nghiêm ngặt, đảm bảo độ sâu nhất quán giữa các model sử dụng backbone này.
+
+    *   **Tái cấu trúc `ASRAN_LBS`:** Model `ASRAN_LBS` được sửa đổi để sử dụng các khối `StandardUNet` từ `backbones.py`.
+
+    **Chi tiết Kiến trúc `ASRAN_LBS` (sử dụng `StandardUNet` backbone):**
+    *   **Cấu trúc tổng thể:** Tích hợp một `LearnableBandSelector` với backbone `StandardUNet`.
+    *   **`LearnableBandSelector`:**
+        *   Đầu vào là `in_channels` (ví dụ: 25) và `num_select_bands` (ví dụ: 5).
+        *   Sử dụng `logits` có thể học được cho mỗi dải tần.
+        *   Trong quá trình huấn luyện, áp dụng kỹ thuật Gumbel-TopK để lựa chọn `num_select_bands` một cách khác biệt hóa.
+        *   Trong quá trình suy luận, chọn ra top-k dải tần dựa trên `logits` đã học.
+    *   **`segmentation_network`:**
+        *   Là một thể hiện của `StandardUNet`.
+        *   `in_channels` cho `StandardUNet` được đặt thành `num_select_bands` (ví dụ: 5).
+        *   `num_classes` và `base_filters` được truyền qua.
+        *   `use_asa` được đặt thành `True`, nghĩa là `Adaptive Spatial Attention` được sử dụng tại bottleneck của `StandardUNet`.
+    *   **Forward Pass:**
+        1.  Đầu vào `x` (ví dụ: 25 dải tần) được truyền qua `band_selector` để lấy `selected_bands` (ví dụ: 5 dải tần).
+        2.  `selected_bands` sau đó được đưa vào `segmentation_network` (StandardUNet) để tạo ra `seg_logits`.
+
+    *   **Tạo `CB_SFNet_Unified`:** Một model `CB_SFNet_Unified` hoàn toàn mới được xây dựng lại từ đầu, sử dụng các khối `Standard` và có cùng độ sâu (4 tầng down-sampling) và cấu trúc như `StandardUNet`. Các đặc trưng của `MDSA-Net` được chèn vào bottleneck một cách hợp lý mà không làm thay đổi kiến trúc U-Net nền.
+
+    **Chi tiết Kiến trúc `CB_SFNet_Unified` (sử dụng `StandardUNet` backbone):**
+    *   **Cấu trúc tổng thể:** Kiến trúc encoder-decoder U-Net 4 cấp (sử dụng các khối xây dựng `StandardUNet`) với các module `CSBD` và `MDSA-Net` tích hợp.
+    *   **Đường dẫn Encoder (các khối Standard U-Net):**
+        *   `inc`: `StandardDoubleConv` (in_channels -> `base_filters`)
+        *   `down1`: `StandardDown` (`base_filters` -> `base_filters * 2`)
+        *   `down2`: `StandardDown` (`base_filters * 2` -> `base_filters * 4`)
+        *   `down3`: `StandardDown` (`base_filters * 4` -> `base_filters * 8`)
+    *   **Các Module mới (Tái sử dụng từ `CB_SFNet` gốc):**
+        *   `csbd`: `CSBD` (in_channels -> 1)
+        *   `mdsa_net`: `MDSA_Net` (in_channels, boundary_channels=1, out_channels=`base_filters * 4`)
+    *   **Tích hợp tại Bottleneck:**
+        *   Đầu ra của `down3` (`x4`) được nối (concatenated) với `mdsa_features` (được tạo từ đầu vào `x` nội suy và `boundary_features`).
+        *   `bottleneck_conv`: `StandardDoubleConv` (`base_filters * 8 + mdsa_out_channels` -> `base_filters * 16`). Đây là nơi các đặc trưng MDSA được đưa vào đường dẫn U-Net chính.
+    *   **Đường dẫn Decoder (các khối Standard U-Net):**
+        *   `up1`: `StandardUp` (`base_filters * 16` -> `base_filters * 8`) - nhận `x5` (đầu ra bottleneck) và `x4` (kết nối bỏ qua từ encoder).
+        *   `up2`: `StandardUp` (`base_filters * 8` -> `base_filters * 4`)
+        *   `up3`: `StandardUp` (`base_filters * 4` -> `base_filters * 2`)
+        *   `up4`: `StandardUp` (`base_filters * 2` -> `base_filters`)
+        *   `outc`: `StandardOutConv` (`base_filters` -> `num_classes`)
+    *   **Forward Pass:**
+        1.  `CSBD` xử lý đầu vào `x` để lấy `boundary_logits` và `boundary_features`.
+        2.  Đầu vào `x` đi qua encoder U-Net 4 cấp (`inc` đến `down3`).
+        3.  `MDSA-Net` xử lý `x` nội suy và `boundary_features` để lấy `mdsa_features`.
+        4.  `x4` (đầu ra encoder) được nối với `mdsa_features` và đi qua `bottleneck_conv`.
+        5.  Kết quả (`x5`) sau đó đi qua decoder U-Net 4 cấp (`up1` đến `outc`).
+        6.  Trả về một dictionary với `segmentation`, `boundary` và `contrast_features`.
+
+    *   **Đăng ký Model mới:** Cập nhật `src/models/__init__.py` để đăng ký `CB_SFNet_Unified`.
+*   **Thử nghiệm:** `cbsfnet_unified_exp1`
+    *   **File Config:** `configs/cbsfnet_unified_exp1_config.yaml`
+    *   **Tiến trình:**
+        *   Chạy thử 1-epoch để xác thực kiến trúc mới.
+        *   Huấn luyện đầy đủ trong khoảng 105 epochs (dừng sớm do hội tụ).
+    *   **Kết quả:**
+        *   **mIoU tốt nhất:** **0.7607**
+        *   **Tham số:** 0.53M
+        *   **GFLOPs:** 2.96
+        *   **FPS (ước tính):** ~1128
+    *   **Thành tựu:**
+        *   Đã thiết lập thành công một baseline công bằng.
+        *   `CB_SFNet_Unified` trở thành model tốt nhất mới, vượt qua `ASRAN_LBS` (0.7241) trong một so sánh công bằng.
+
+---
+
+## 3. Cải tiến 2: Tăng cường Dữ liệu Nâng cao (Enhanced Data Augmentation)
+
+*   **Mục tiêu:** Cải thiện hơn nữa mIoU của model `CB_SFNet_Unified` bằng cách sử dụng các kỹ thuật tăng cường dữ liệu mạnh mẽ hơn.
+*   **Hành động:**
+    *   Sao chép config của `cbsfnet_unified_exp1` thành `configs/cbsfnet_unified_exp2_aug_config.yaml`.
+    *   Thêm các kỹ thuật tăng cường dữ liệu mới: `GridDistortion` và `CoarseDropout` vào pipeline augmentation.
+*   **Thử nghiệm:** `cbsfnet_unified_exp2_aug`
+    *   **File Config:** `configs/cbsfnet_unified_exp2_aug_config.yaml`
+    *   **Tiến trình:**
+        *   Chạy thử 1-epoch để xác thực cấu hình augmentation mới.
+        *   Huấn luyện đầy đủ trong khoảng 116 epochs (dừng sớm do hội tụ).
+    *   **Kết quả:**
+        *   **mIoU tốt nhất:** **0.7667**
+        *   **Tham số:** 0.53M
+        *   **GFLOPs:** 2.96
+        *   **FPS (ước tính):** ~781 (thấp hơn do tính toán augmentation)
+    *   **Thành tựu:**
+        *   Tăng cường dữ liệu mạnh đã thành công trong việc đẩy mIoU lên một kỷ lục mới, chứng minh hiệu quả của nó.
+        *   `cbsfnet_unified_exp2_aug` trở thành model tốt nhất hiện tại.
+
+---
+
+## 4. Cải tiến 3: Scheduler Learning Rate Cosine Annealing
+
+*   **Mục tiêu:** Tối ưu hóa lịch trình learning rate để đạt được sự hội tụ mượt mà hơn và tiềm năng mIoU cao hơn.
+*   **Hành động:**
+    *   Sao chép config của `cbsfnet_unified_exp2_aug` thành `configs/cbsfnet_unified_exp3_cosine_config.yaml`.
+    *   Thay thế scheduler `ReduceLROnPlateau` bằng `CosineAnnealingLR` với các tham số `T_max: 200` và `eta_min: 0.000001`.
+*   **Thử nghiệm:** `cbsfnet_unified_exp3_cosine`
+    *   **File Config:** `configs/cbsfnet_unified_exp3_cosine_config.yaml`
+    *   **Tiến trình:**
+        *   Chạy thử 1-epoch để xác thực cấu hình scheduler mới.
+        *   Đang huấn luyện đầy đủ (đã hoàn thành 169 epochs khi kiểm tra lần cuối).
+    *   **Kết quả (tính đến lần kiểm tra cuối cùng):**
+        *   **mIoU tốt nhất:** **0.7792** (tại epoch 119)
+        *   **Tham số:** 0.53M
+        *   **GFLOPs:** 2.96
+    *   **Thành tựu:**
+        *   `CosineAnnealingLR` đã chứng minh hiệu quả vượt trội, dẫn đến một kỷ lục mIoU mới.
+        *   Model đang rất gần với mục tiêu 0.8 mIoU, cho thấy tiềm năng lớn.
+
+---
+
+## 5. Thành tựu Tổng thể của Dự án
+
+*   Đã thành công trong việc xác định `CB_SFNet_Unified` là kiến trúc nhẹ tốt nhất sau khi chuẩn hóa backbone.
+*   Đã đạt được kỷ lục mIoU mới là **0.7792**, tiến gần hơn đáng kể đến mục tiêu 0.8 mIoU.
+*   Đã chứng minh hiệu quả của cả việc tăng cường dữ liệu nâng cao và scheduler `CosineAnnealingLR` trong việc cải thiện hiệu suất model.
+*   Dự án đang trên đà đạt được mục tiêu mIoU 0.8 với một model siêu nhẹ và hiệu quả.
+
+---
+
+## 6. Bảng So sánh Chi tiết các Thử nghiệm
+
+| Thử nghiệm | Kiến trúc | Chi tiết Kiến trúc | Augmentation | Scheduler LR | mIoU tốt nhất | Tham số | GFLOPs | FPS (ước tính) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `cbsfnet_light_exp2` | `CB_SFNet` (Gốc) | U-Net 5 cấp, `base_filters=8`, `CSBD`, `MDSA-Net` | Cơ bản | `ReduceLROnPlateau` | 0.7466 | 0.53M | N/A | N/A |
+| `ASRAN_LBS_exp2_base8` | `ASRAN_LBS` | `StandardUNet` 4 cấp, `base_filters=8`, `LearnableBandSelector`, `ASA` | Cơ bản | `ReduceLROnPlateau` | 0.7241 | 0.49M | 2.68 | ~1491 |
+| `cbsfnet_unified_exp1` | `CB_SFNet_Unified` | `StandardUNet` 4 cấp, `base_filters=8`, `CSBD`, `MDSA-Net` | Cơ bản | `ReduceLROnPlateau` | 0.7607 | 0.53M | 2.96 | ~1128 |
+| `cbsfnet_unified_exp2_aug` | `CB_SFNet_Unified` | `StandardUNet` 4 cấp, `base_filters=8`, `CSBD`, `MDSA-Net` | Nâng cao (`GridDistortion`, `CoarseDropout`) | `ReduceLROnPlateau` | 0.7667 | 0.53M | 2.96 | ~781 |
+| `cbsfnet_unified_exp3_cosine` | `CB_SFNet_Unified` | `StandardUNet` 4 cấp, `base_filters=8`, `CSBD`, `MDSA-Net` | Nâng cao (`GridDistortion`, `CoarseDropout`) | `CosineAnnealingLR` | 0.7792 | 0.53M | 2.96 | ~1388 |

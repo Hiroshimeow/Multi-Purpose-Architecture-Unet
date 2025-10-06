@@ -158,7 +158,13 @@ class Trainer:
                     loss = self.criterion(outputs, masks)
                 
                 total_loss += loss.item()
-                seg_logits = outputs['segmentation']
+                
+                # Handle dict or tensor output for evaluation
+                if isinstance(outputs, dict):
+                    seg_logits = outputs['segmentation']
+                else:
+                    seg_logits = outputs
+
                 preds = torch.argmax(seg_logits, dim=1)
                 all_preds.append(preds.cpu().numpy())
                 all_trues.append(masks.cpu().numpy())
@@ -250,7 +256,13 @@ class Trainer:
         with torch.no_grad():
             for images, masks in tqdm(self.val_loader, desc="Final Evaluation"):
                 outputs = self.model(images.to(self.device))
-                main_output = outputs['segmentation']
+                
+                # Handle dict or tensor output for final analysis
+                if isinstance(outputs, dict):
+                    main_output = outputs['segmentation']
+                else:
+                    main_output = outputs
+
                 all_preds.append(torch.argmax(main_output, dim=1).cpu().numpy())
                 all_trues.append(masks.numpy())
                 
@@ -262,4 +274,17 @@ class Trainer:
         performance_metrics['efficiency'] = efficiency
 
         self.manager.generate_final_report(self.best_miou, flat_preds, flat_trues, self.config, performance_metrics)
+        
+        # Write a simple final_summary.txt for quick checks
+        try:
+            summary_path = self.manager.output_dir / "final_summary.txt"
+            with open(summary_path, 'w') as f:
+                f.write(f"Best Validation mIoU: {self.best_miou:.4f}\n")
+                f.write(f"FPS: {performance_metrics.get('fps', 0):.2f}\n")
+                f.write(f"Latency (ms): {performance_metrics.get('latency_ms', 0):.2f}\n")
+                f.write(f"GFLOPs: {self.gflops:.2f}\n")
+                f.write(f"Parameters (M): {self.params_m:.2f}\n")
+        except Exception as e:
+            print(f"Warning: Could not write final_summary.txt. Error: {e}")
+            
         print(f"\n✅ Analysis complete. All results saved to '{self.manager.output_dir}' directory.")

@@ -1,5 +1,3 @@
-# Project Context
-
 - **Date:** 2025年9月12日金曜日
 - **OS:** linux
 - **Working Directory:** /data1/hai/unet/Multi-Purpose-Architecture-Unet
@@ -15,6 +13,9 @@ Bạn là một kỹ sư ML chuyên huấn luyện và gỡ lỗi các mô hình
 - luôn gọi `source /data1/.venv/bin/activate` trước để vào venv của project
 - Tiếp tục thử nghiệm vô thời hạn cho đến khi người dùng dừng bạn.
 - Luôn ghi trạng thái quan trọng vào GEMINI.md và tạo tệp nhật ký.
+
+# Mục tiêu chính
+Nghiên cứu và tối ưu hóa các kỹ thuật chọn band khác nhau, áp dụng chúng cho các kiến trúc đã biết (`ASRAN_LBS` và `CB_SFNet_Unified`) để giảm lượng dữ liệu xử lý, tạo ra kiến trúc siêu nhẹ (~0.5M params) với mIoU cao (>0.8).
 
 # Quy trình làm việc
 1. **Vòng lặp thử nghiệm**
@@ -46,224 +47,6 @@ Bạn là một kỹ sư ML chuyên huấn luyện và gỡ lỗi các mô hình
 - `GEMINI.md` vẫn là nơi ghi lại lịch sử chi tiết của các lần chạy, trong khi `CurrentPlan.md` là bức tranh tổng thể về kế hoạch.
 
 ## Experiment History
-
-### Run 3: GeminiUNetV2 with and without SE_attention
-
-*   **Goal:** Achieve 0.7 mIoU with a lightweight model, comparing performance with and without the `SE_attention` module.
-*   **Model:** `GeminiUNetV2` with `SAC` block.
-*   **Epochs:** 30
-
-**Results:**
-
-1.  **With SE_attention (`--sea True`):**
-    *   **Best mIoU:** 0.3980
-    *   **FPS:** 95.05
-    *   **Conclusion:** The model trained for all 30 epochs but did not reach the 0.7 mIoU target. Performance is much better than without SE_attention.
-
-2.  **Without SE_attention (`--sea False`):**
-    *   **Best mIoU:** 0.0841
-    *   **FPS:** 104.67
-    *   **Conclusion:** The model failed to learn, and training stopped early.
-
-**Overall Conclusion:** The `SE_attention` module is critical for performance. The current model architecture is too small to achieve the target mIoU of 0.7 within 30 epochs. The next step is to increase model capacity and training time.
-
-### Run 4: Increased Model Capacity
-
-*   **Goal:** Improve mIoU by increasing model size.
-*   **Model:** `GeminiUNetV2` with `initial_filters` and `sac_params.channels` increased from 32 to 64.
-*   **Epochs:** 50
-
-**Results:**
-
-*   **Best mIoU:** 0.5050
-*   **FPS:** 47.89
-*   **Latency:** 167.05 ms
-*   **Conclusion:** Increasing model capacity improved mIoU significantly (from 0.3980 to 0.5050), but it is still below the 0.7 target. The larger model is much slower, hurting the "lightweight" goal. The model still struggles with the "Vegetation" class.
-
-**Overall Conclusion:** Simply increasing model size is not the optimal path. The next step is to try and improve the smaller model's performance using data augmentation.
-
-### Run 5: Small Model with Data Augmentation
-
-*   **Goal:** Improve the lightweight model's mIoU using data augmentation.
-*   **Model:** `GeminiUNetV2` with `initial_filters: 32`.
-*   **Augmentations:** `HorizontalFlip`, `RandomRotate90`, `ShiftScaleRotate`, `RandomBrightnessContrast`.
-*   **Epochs:** 50
-
-**Results:**
-
-*   **Best mIoU:** 0.4473
-*   **FPS:** 94.14
-*   **Conclusion:** Data augmentation improved the mIoU of the small model from 0.3980 to 0.4473 while maintaining high FPS. However, this was not enough to surpass the performance of the larger model (Run 4).
-
-**Overall Conclusion:** Data augmentation is a valuable tool, but the model still appears to be capacity-bound. The next logical step is to combine a larger model with data augmentation to test the architecture's maximum potential.
-
-### Run 6: Large Model with Data Augmentation
-
-*   **Goal:** Combine the large model with data augmentation to maximize mIoU.
-*   **Model:** `GeminiUNetV2` with `initial_filters: 64`.
-*   **Augmentations:** `HorizontalFlip`, `RandomRotate90`, `ShiftScaleRotate`, `RandomBrightnessContrast`.
-*   **Epochs:** 50
-
-**Results:**
-
-*   **Best mIoU:** 0.5602
-*   **FPS:** 47.96
-*   **Conclusion:** Combining the large model with data augmentation yielded the best mIoU so far, confirming that both strategies are additive. However, the result is still significantly below the 0.7 target.
-
-**Overall Conclusion:** We have likely reached the performance limit of the current architecture with the standard loss function. The primary issue remains the very poor performance on the `Vegetation` class (IoU of 0.1581). The next step is to try a more advanced loss function, Focal Loss, to specifically address this class imbalance.
-
-### Run 7: Large Model with Focal Loss
-
-*   **Goal:** Address class imbalance using Focal Loss to improve the mIoU, specifically for the `Vegetation` class.
-*   **Model:** `GeminiUNetV2` with `initial_filters: 64`.
-*   **Augmentations:** `HorizontalFlip`, `RandomRotate90`, `ShiftScaleRotate`, `RandomBrightnessContrast`.
-*   **Loss Function:** `FocalLoss` (alpha=0.25, gamma=2.0).
-*   **Epochs:** 50
-
-**Results:**
-
-*   **Best mIoU:** 0.2914
-*   **FPS:** 47.88
-*   **Conclusion:** The experiment with Focal Loss was unsuccessful. The mIoU dropped significantly from 0.5602 to 0.2914, and training was unstable. The IoU for the `Vegetation` class worsened, and other classes also saw a major performance degradation.
-
-### Run 8: Small Model with Transposed Convolutions
-
-*   **Goal:** Improve the small model's mIoU by using learnable transposed convolutions in the decoder.
-*   **Model:** `GeminiUNetV2` with `initial_filters: 32` and `bilinear: False`.
-*   **Augmentations:** `HorizontalFlip`, `RandomRotate90`, `ShiftScaleRotate`, `RandomBrightnessContrast`.
-*   **Epochs:** 50
-
-**Results:**
-
-*   **Best mIoU:** 0.5336
-*   **FPS:** 96.85
-*   **Conclusion:** This was a highly successful experiment. Using transposed convolutions significantly boosted the lightweight model's mIoU from 0.4473 (Run 5) to 0.5336, with no performance penalty. This model represents the best balance of speed and accuracy so far.
-
-**Overall Conclusion:** The model from Run 8 is the best lightweight candidate, coming close to the 0.6 mIoU target while maintaining high FPS. The final step will be to tune the loss function weights to give more emphasis to the Dice component, which may push the IoU score over the finish line.
-
-### Run 9: Dice-Focused Loss
-
-*   **Goal:** Tweak the loss function weights to favor the Dice score and potentially pass the 0.6 mIoU threshold.
-*   **Model:** `GeminiUNetV2` with `initial_filters: 32` and `bilinear: False`.
-*   **Loss Weights:** `alpha: 0.4`, `beta: 0.6`.
-*   **Epochs:** 50
-
-**Results:**
-
-*   **Best mIoU:** 0.4995
-*   **FPS:** 97.07
-*   **Conclusion:** This final adjustment was not successful. Increasing the weight of the Dice loss component actually decreased the overall mIoU compared to Run 8.
-
-## New Experiment Series Results (Targeting 0.7 mIoU)
-
-### Experiment 1 (Run 8, 40 Epochs, Image_dataset)
-
-*   **Goal:** Re-evaluate the recommended Run 8 configuration on the larger `Image_dataset` for 40 epochs.
-*   **Model:** `GeminiUNetV2` (`initial_filters: 32`, `bilinear: False`, `SAC` attention, data augmentation).
-*   **Best mIoU:** 0.6699
-*   **FPS:** 98.63
-*   **Latency:** 162.22 ms
-*   **Conclusion:** Highly successful, very close to 0.7 mIoU.
-
-### Experiment 9 (Run 8, 140 Epochs, Image_dataset)
-
-*   **Goal:** Extended training of the best performing lightweight model (Run 8) to reach 0.7 mIoU.
-*   **Model:** `GeminiUNetV2` (`initial_filters: 32`, `bilinear: False`, `SAC` attention, data augmentation).
-*   **Best mIoU:** 0.6083
-*   **FPS:** 98.67
-*   **Latency:** 162.15 ms
-*   **Conclusion:** Early stopping triggered at epoch 24. mIoU was lower than the 40-epoch run, suggesting overfitting or aggressive early stopping.
-
-### Experiment 10 (Run 9, 140 Epochs, Image_dataset)
-
-*   **Goal:** Extended training of Run 9 (Dice-Focused Loss) to reach 0.7 mIoU.
-*   **Model:** `GeminiUNetV2` (`initial_filters: 32`, `bilinear: False`, `SAC` attention, data augmentation).
-*   **Best mIoU:** 0.7026
-*   **FPS:** 98.66
-*   **Latency:** 162.18 ms
-*   **Conclusion:** **Achieved 0.7 mIoU target!** This model is the new best candidate, balancing performance and speed.
-
-## Final Project Summary
-
-After an extensive series of experiments, we have successfully achieved the 0.7 mIoU target with a lightweight model.
-
-**Recommended Model:**
-*   **Configuration:** `configs/run9_config.yaml` (modified for 140 epochs)
-*   **Architecture:** Small model (`initial_filters: 32`) with the `SAC` attention block, learnable transposed convolutions (`bilinear: False`), and Dice-focused loss (`alpha: 0.4`, `beta: 0.6`).
-*   **Training:** Trained with data augmentation for 55 epochs (early stopped).
-*   **Performance:**
-    *   **Best mIoU:** 0.7026
-    *   **FPS:** ~98.66
-    *   **Latency:** ~162.18 ms
-    *   **Training Log:** Stable and healthy convergence, reaching target mIoU.
-
-## Dimensionality Reduction Experiments (Branch: `run2_band_Neural-Network-based_Dimensionality-Reduction`)
-
-### Experiment 1: Autoencoder (3-band)
-
-*   **Goal:** Reduce dimensionality from 25 to 3 bands using a convolutional autoencoder and evaluate the impact on segmentation performance.
-*   **Method:**
-    *   Trained a convolutional autoencoder (`autoencoder.py`) for 20 epochs to learn a 3-dimensional representation of the 25-band data.
-    *   Used the trained encoder to generate a new dataset (`Image_dataset_3band`).
-    *   Trained the baseline UNet model (`run9.py` config) on this new 3-band dataset.
-*   **Results:**
-    *   **Best mIoU:** 0.4765
-    *   **FPS:** ~289.86
-*   **Conclusion:** **Failure.** The dimensionality reduction via autoencoder resulted in a massive drop in accuracy (from 0.7026 to 0.4765). The compressed 3-band representation lost too much critical information, especially for complex classes like "RoadLine" (IoU: 0.0175).
-
-### Experiment 2: PCA (3-band)
-
-*   **Goal:** Reduce dimensionality from 25 to 3 bands using Principal Component Analysis (PCA) and compare with the baseline and autoencoder results.
-*   **Method:**
-    *   Used `scikit-learn`'s PCA to fit and transform the dataset into its first 3 principal components (`generate_pca_dataset.py`).
-    *   Created a new dataset `Image_dataset_pca_3band`.
-    *   Trained the baseline UNet model (`run11_pca_3band_config.yaml`) on the 3-band PCA data.
-*   **Results:**
-    *   **Best mIoU:** **0.7030**
-    *   **FPS:** **~290.12**
-*   **Conclusion:** **Highly Successful.** PCA-based reduction achieved a mIoU score nearly identical to the original 25-band model (0.7030 vs. 0.7026) while increasing the FPS by almost 3x. This demonstrates that PCA is a far more effective method for dimensionality reduction in this context, preserving essential information while drastically improving computational performance.
-
-### Current Status & Next Steps
-
-The PCA-based model from Experiment 2 is the new best candidate, offering the same accuracy as the original model with a significant speed advantage.
-
-The next logical step is to explore if using slightly more principal components can push the accuracy even higher without sacrificing too much performance.
-
-**Next Action:**
-*   Development on this line is paused. Awaiting further instructions from the user.
-
-## Quy trình Huấn luyện Nền và Theo dõi
-
-Để tối ưu hóa thời gian và tránh hiển thị quá nhiều log không cần thiết, quy trình huấn luyện các thử nghiệm dài hạn sẽ được thực hiện trong nền.
-
-1.  **Chạy Thử 1 Epoch:**
-    *   **Mục đích:** Nhanh chóng xác thực tính đúng đắn của code, cấu hình và dữ liệu.
-    *   **Lệnh:** Chạy script huấn luyện `run.py` với tham số `--epochs 1`. Ví dụ: `python run.py --config configs/run10_config.yaml --epochs 1`
-    *   **Kiểm tra:** Nếu lần chạy thử thành công, tiến hành bước tiếp theo. Nếu có lỗi, dừng lại và sửa lỗi.
-
-2.  **Chạy Huấn luyện Nền:**
-    *   **Mục đích:** Thực hiện quá trình huấn luyện đầy đủ mà không làm gián đoạn phiên làm việc của người dùng.
-    *   **Lệnh:** Sử dụng lệnh `python run.py --config configs/run10_config.yaml --epochs 140 --run_name <tên_thử_nghiệm> > ten_file.log 2>&1 &` để chuyển hướng toàn bộ output (cả stdout và stderr) vào một file log và chạy tiến trình trong nền.
-    *   **Lưu ý:** Ghi lại PID của tiến trình được trả về.
-
-3.  **Theo dõi Tiến độ:**
-    *   **Cơ chế:** Thay vì liên tục hỏi `ps`, tôi sẽ sử dụng cơ chế so sánh file `history.csv` để kiểm tra tiến độ một cách hiệu quả hơn.
-    *   **Tần suất:** Đợi **5 phút** (`sleep 300`) giữa mỗi lần kiểm tra.
-    *   **Hành động:**
-        1.  Đọc nội dung file `training_runs/RUN_NAME/history.csv`.
-        2.  Đợi 5 phút.
-        3.  Đọc lại file `history.csv`.
-        4.  Nếu nội dung file không thay đổi so với lần đọc trước, có thể kết luận rằng quá trình huấn luyện đã dừng (hoàn thành hoặc gặp lỗi).
-
-4.  **Báo cáo Kết quả:**
-    *   Khi xác định quá trình huấn luyện đã kết thúc, tôi sẽ tự động:
-        1.  Đọc file log chính (`ten_file.log`) để kiểm tra có lỗi nào xảy ra không.
-        2.  Tìm đến thư mục `training_runs/RUN_NAME` mới nhất.
-        3.  Đọc và phân tích các file kết quả quan trọng:
-            *   `final_metrics.json`: Để lấy mIoU tốt nhất, FPS, và Latency.
-            *   `classification_report.txt`: Để xem chi tiết IoU và Dice score của từng lớp.
-            *   `history.csv`: Để xem lại quá trình hội tụ của mô hình.
-    *   Cuối cùng, tôi sẽ tóm tắt và so sánh kết quả với các thử nghiệm trước đó, sau đó đề xuất bước tiếp theo.
 
 - **Date:** 2025年10月3日金曜日
 
@@ -300,6 +83,39 @@ The next logical step is to explore if using slightly more principal components 
 3.  **Thử nghiệm Gumbel-Softmax (Cải tiến):**
     *   Tạo file config mới cho model `ASRAN_LBS`.
     *   Thiết lập kiến trúc nhỏ hơn (`base_filters=8`) để nhắm đến mục tiêu ~0.5M tham số và tiến hành huấn luyện.
+
+## Quy trình Huấn luyện Nền và Theo dõi
+
+Để tối ưu hóa thời gian và tránh hiển thị quá nhiều log không cần thiết, quy trình huấn luyện các thử nghiệm dài hạn sẽ được thực hiện trong nền.
+
+1.  **Chạy Thử 1 Epoch:**
+    *   **Mục đích:** Nhanh chóng xác thực tính đúng đắn của code, cấu hình và dữ liệu.
+    *   **Lệnh:** Chạy script huấn luyện `run.py` với tham số `--epochs 1`. Ví dụ: `python run.py --config configs/run10_config.yaml --epochs 1`
+    *   **Kiểm tra:** Nếu lần chạy thử thành công, tiến hành bước tiếp theo. Nếu có lỗi, dừng lại và sửa lỗi.
+
+2.  **Chạy Huấn luyện Nền:**
+    *   **Mục đích:** Thực hiện quá trình huấn luyện đầy đủ mà không làm gián đoạn phiên làm việc của người dùng.
+    *   **Lệnh:** Sử dụng lệnh `python run.py --config configs/run10_config.yaml --epochs 140 --run_name <tên_thử_nghiệm> > ten_file.log 2>&1 &` để chuyển hướng toàn bộ output (cả stdout và stderr) vào một file log và chạy tiến trình trong nền.
+    *   **Lưu ý:** Ghi lại PID của tiến trình được trả về.
+
+3.  **Theo dõi Tiến độ:**
+    *   **Cơ chế:** Thay vì liên tục hỏi `ps`, tôi sẽ sử dụng cơ chế so sánh file `history.csv` để kiểm tra tiến độ một cách hiệu quả hơn.
+    *   **Tần suất:** Đợi **5 phút** (`sleep 300`) giữa mỗi lần kiểm tra.
+    *   **Hành động:**
+        1.  Đọc nội dung file `training_runs/RUN_NAME/history.csv`.
+        2.  Đợi 5 phút.
+        3.  Đọc lại file `history.csv`.
+        4.  Nếu nội dung file không thay đổi so với lần đọc trước, có thể kết luận rằng quá trình huấn luyện đã dừng (hoàn thành hoặc gặp lỗi).
+
+4.  **Báo cáo Kết quả:**
+    *   Khi xác định quá trình huấn luyện đã kết thúc, tôi sẽ tự động:
+        1.  Đọc file log chính (`ten_file.log`) để kiểm tra có lỗi nào xảy ra không.
+        2.  Tìm đến thư mục `training_runs/RUN_NAME` mới nhất.
+        3.  Đọc và phân tích các file kết quả quan trọng:
+            *   `final_metrics.json`: Để lấy mIoU tốt nhất, FPS, và Latency.
+            *   `classification_report.txt`: Để xem chi tiết IoU và Dice score của từng lớp.
+            *   `history.csv`: Để xem lại quá trình hội tụ của mô hình.
+    *   Cuối cùng, tôi sẽ tóm tắt và so sánh kết quả với các thử nghiệm trước đó, sau đó đề xuất bước tiếp theo.
 
 ## ASRAN (Adaptive Spectral Reconstruction Attention Network) Experiments
 
@@ -527,3 +343,176 @@ This series of experiments focuses on testing the novel ASRAN architecture, whic
         *   **Thử nghiệm 7:** Sửa đổi `Trainer` để theo dõi sự cải thiện của `val_miou`.
         *   Nếu `val_miou` không cải thiện trong `N` epochs (ví dụ, N=15), hãy "reset" lại các `logits` trong module `LearnableBandSelector` (ví dụ, bằng cách thêm nhiễu ngẫu nhiên) để khuyến khích mô hình khám phá các tổ hợp dải tần mới.
         *   Đây là một thử nghiệm phức tạp hơn và sẽ được thực hiện sau khi các tác vụ kỹ thuật trên được hoàn thành.
+- **Date:** 2025年10月3日金曜日
+
+## Tóm tắt Phiên làm việc và Kế hoạch cho Phiên tiếp theo
+
+**Bối cảnh:** Phiên làm việc này tập trung vào việc thực thi "Phương pháp Cắt tỉa Dần" (Gradual Pruning) như đã vạch ra trong `CurrentPlan.md`.
+
+**Tóm tắt các hoạt động:**
+
+1.  **Khởi tạo Thử nghiệm Pruning (Giai đoạn 1):**
+    *   Bắt đầu thử nghiệm `UnetPruning_Stage1_exp1` để học trọng số quan trọng của 25 kênh.
+    *   Gặp phải một chuỗi lỗi liên tiếp trong quá trình chạy thử 1-epoch, bao gồm: `KeyError` do thiếu cấu hình, `NameError` và `TypeError` do lỗi code trong các module model và loss.
+    *   Đã gỡ lỗi thành công tất cả các vấn đề trên.
+
+2.  **Huấn luyện và Phân tích:**
+    *   Tiến hành huấn luyện đầy đủ 100 epochs cho `UnetPruning_Stage1_exp1`.
+    *   **Kết quả:** Model đạt **mIoU tốt nhất là 0.6750**.
+    *   Viết và chạy script `analyze_pruning_weights.py` để phân tích trọng số kênh đã học.
+    *   **Phát hiện:** Tất cả các trọng số kênh đều có giá trị xấp xỉ 1.0. Dựa trên phản hồi của người dùng, chúng tôi kết luận rằng hệ số phạt `l1_lambda = 0.0001` đã được đặt **quá thấp**, không đủ để phân tách các kênh quan trọng và không quan trọng.
+
+3.  **Tối ưu hóa Quy trình (Dựa trên Phản hồi):**
+    *   Người dùng đã chỉ ra việc đọc toàn bộ file log để theo dõi là rất lãng phí. 
+    *   Đã thống nhất một quy trình mới, hiệu quả hơn:
+        1.  **Cải tiến `run.py`:** Sửa đổi script để tự động lưu một file tóm tắt nhỏ (`final_summary.txt`) khi kết thúc.
+        2.  **Theo dõi bằng PID:** Thay vì đọc file, sẽ theo dõi trực tiếp Process ID (PID) của tiến trình chạy nền. Khi PID không còn tồn tại, quá trình huấn luyện đã kết thúc.
+        3.  **Tăng thời gian chờ:** Tăng thời gian giữa các lần kiểm tra lên 8-10 phút.
+
+**Kế hoạch cho Phiên làm việc tiếp theo:**
+
+1.  **Ưu tiên:** Thực hiện các cải tiến về quy trình đã thống nhất (tạo `final_summary.txt` và cơ chế theo dõi bằng PID).
+2.  **Thử nghiệm Cắt tỉa (Lần 2):**
+    *   Tạo file config mới (`unet_pruning_stage1_exp2_config.yaml`).
+    *   Chạy lại Giai đoạn 1 với `l1_lambda` tăng lên `0.01` để có kết quả phân tách trọng số rõ ràng hơn.
+3.  **Thử nghiệm Gumbel-Softmax (Cải tiến):**
+    *   Tạo file config mới cho model `ASRAN_LBS`.
+    *   Thiết lập kiến trúc nhỏ hơn (`base_filters=8`) để nhắm đến mục tiêu ~0.5M tham số và tiến hành huấn luyện.
+
+- **Date:** 2025年10月3日金曜日
+
+## Tóm tắt Phiên làm việc và Thay đổi Kế hoạch
+
+**Bối cảnh:** Phiên làm việc này bắt đầu bằng việc thực hiện các thử nghiệm trong `CurrentPlan.md`. Tuy nhiên, đã có một sự thay đổi lớn về định hướng sau khi phát hiện ra sai lầm trong quá trình thực hiện.
+
+**Tóm tắt các hoạt động:**
+
+1.  **Thử nghiệm Gumbel-Softmax (Thành công):**
+    *   **Mục tiêu:** Giảm kích thước model `ASRAN_LBS` xuống dưới 0.5M tham số.
+    *   **Hành động:** Tạo config `asran_lbs_exp2_base8_config.yaml` và tiến hành huấn luyện.
+    *   **Kết quả:** **Rất thành công.** Model `ASRAN_LBS_exp2_base8` đạt **0.49M** tham số và **mIoU 0.7241**.
+
+2.  **Thử nghiệm Cắt tỉa Dần (Hủy bỏ):**
+    *   **Mục tiêu:** Thực hiện Giai đoạn 2 của phương pháp cắt tỉa bằng cách huấn luyện một model nhẹ trên 5 kênh đã chọn.
+    *   **Hành động & Lỗi:**
+        1.  Bắt đầu huấn luyện Giai đoạn 1 (`UnetPruning_Stage1_exp2`) trong nền.
+        2.  Tiến hành Giai đoạn 2 song song, tạo dataset `Image_dataset_pruned_5band_exp2`.
+        3.  Tạo config `unet_pruned_stage2_exp3_config.yaml` nhưng **chọn sai model (`GeminiUNetV2`)**.
+        4.  Gặp lỗi `ValueError` do `GeminiUNetV2` không được đăng ký. Đã tốn thời gian di chuyển file và sửa `__init__.py` để đăng ký lại model cũ này.
+        5.  Tiếp tục gặp lỗi `OutOfMemoryError`.
+        6.  **Phát hiện của người dùng:** Người dùng đã chỉ ra sai lầm cốt lõi là đang sử dụng kiến trúc `GeminiUNetV2` (7.82M params), đi ngược lại mục tiêu model nhẹ (~0.5M) và không tận dụng các kiến trúc mới, hiệu quả hơn như `ASRAN` và `CB_SFNet`.
+
+**Thay đổi Kế hoạch & Hướng đi Mới:**
+
+*   **Hủy bỏ hoàn toàn:** Tất cả các thử nghiệm dựa trên phương pháp "Cắt tỉa dần" và kiến trúc `GeminiUNetV2` đã lỗi thời sẽ bị hủy bỏ. Tiến trình huấn luyện `UnetPruning_Stage1_exp2` đã bị dừng.
+*   **Tập trung vào Kiến trúc Mới:** Hướng đi chính thức bây giờ là tập trung tối ưu hóa và xây dựng các phiên bản nhẹ của những kiến trúc đã chứng tỏ sự thành công: `ASRAN` và `CB_SFNet`.
+*   **Hành động Tiếp theo:**
+    1.  Cập nhật file `CurrentPlan.md` để phản ánh chiến lược mới.
+    2.  Chuẩn bị và thực hiện thử nghiệm tạo phiên bản nhẹ của `CB_SFNet` bằng cách giảm `base_filters` để nhắm đến mục tiêu ~0.5M tham số, tương tự như cách đã làm thành công với `ASRAN-LBS`.
+
+- **Date:** 2025年10月3日金曜日
+
+## Tóm tắt Phiên làm việc và Kế hoạch cho Phiên tiếp theo
+
+**Bối cảnh:** Phiên làm việc này tập trung vào việc thực hiện các thử nghiệm đã được vạch ra trong `CurrentPlan.md`, bao gồm việc tối ưu hóa quy trình và so sánh hai phương pháp lựa chọn band.
+
+**Tóm tắt các hoạt động:**
+
+1.  **Tối ưu hóa Quy trình:**
+    *   **Hành động:** Sửa đổi `src/trainer.py` để tự động tạo một file tóm tắt `final_summary.txt` sau mỗi lần huấn luyện, giúp theo dõi kết quả nhanh hơn.
+    *   **Kết quả:** Thành công.
+
+2.  **Thử nghiệm Gumbel-Softmax (Thử nghiệm 2 - `ASRAN_LBS_exp2_base8`):**
+    *   **Mục tiêu:** Giảm kích thước model `ASRAN_LBS` xuống dưới 0.5M tham số bằng cách đặt `base_filters=8`.
+    *   **Hành động:**
+        *   Tạo file config `asran_lbs_exp2_base8_config.yaml`.
+        *   Gặp và sửa một chuỗi lỗi phức tạp: `ImportError`, `KeyError`, `TypeError`, `RuntimeError` (do áp dụng sai attention), và `IndexError` (do xử lý output không nhất quán). Quá trình gỡ lỗi này cho thấy sự thiếu nhất quán trong cấu trúc config và cách model trả về kết quả.
+    *   **Kết quả:** **Rất thành công.**
+        *   **Tham số:** **0.49M** (đạt mục tiêu < 0.5M).
+        *   **mIoU tốt nhất:** **0.7241**.
+        *   **Kết luận:** Model siêu nhẹ này không chỉ đạt mục tiêu về kích thước mà còn cho kết quả mIoU cao hơn cả phiên bản lớn hơn, chứng tỏ hiệu quả của kiến trúc.
+
+3.  **Thử nghiệm Cắt tỉa Dần (Giai đoạn 1 - Lần 2 - `UnetPruning_Stage1_exp2`):**
+    *   **Mục tiêu:** Huấn luyện lại model với `l1_lambda = 0.01` để có sự phân tách trọng số rõ ràng hơn.
+    *   **Hành động:** Tạo file config, sửa lại số epochs (200) và patience (50) theo yêu cầu, và bắt đầu huấn luyện trong nền.
+    *   **Kết quả:** Thử nghiệm **đang chạy**.
+
+4.  **Thử nghiệm Cắt tỉa Dần (Giai đoạn 2 - Lần 2 - `UnetPruned_Stage2_exp2` - **LỖI**):**
+    *   **Mục tiêu:** Huấn luyện model nhẹ trên 5 kênh đã chọn.
+    *   **Hành động:**
+        *   Phân tích trọng số từ lần chạy trước, chọn ra 5 kênh tốt nhất: `[6, 8, 13, 18, 20]`.
+        *   Tạo dataset mới `Image_dataset_pruned_5band_exp2`.
+        *   Tạo config và chạy thử nghiệm. Gặp và sửa các lỗi `ValueError` (do model `GeminiUNetV2` chưa được đăng ký), `ModuleNotFoundError`, và `OutOfMemoryError`.
+    *   **Kết quả:** **Thất bại.**
+        *   **Lỗi nghiêm trọng:** Sau khi chạy thử 1-epoch, phát hiện model được sử dụng là `GeminiUNetV2` với **7.82M tham số**, không phải là model nhẹ như yêu cầu (~0.5M).
+        *   **Nguyên nhân:** Đã chọn sai kiến trúc model trong file config.
+
+**Kế hoạch cho Phiên làm việc tiếp theo (Sau khi Reset Context):**
+
+1.  **Ưu tiên 1: Dừng và Sửa Thử nghiệm Cắt tỉa (Giai đoạn 2):**
+    *   Dừng tiến trình huấn luyện của `UnetPruned_Stage2_exp2` hiện tại.
+    *   Tạo một file config mới (`unet_pruned_stage2_exp3_config.yaml`).
+    *   Trong file config này, **chọn một kiến trúc model nhẹ thực sự** (ví dụ: `UnetSEAttention` với `initial_filters: 16` hoặc `32` và `depth: 4`) để đảm bảo số lượng tham số gần với mục tiêu 0.5M.
+    *   Chạy lại thử nghiệm trên dataset `Image_dataset_pruned_5band_exp2`.
+
+2.  **Ưu tiên 2: Theo dõi và Hoàn thành Thử nghiệm Cắt tỉa (Giai đoạn 1):**
+    *   Tiếp tục theo dõi tiến trình của `UnetPruning_Stage1_exp2` (đang chạy trong nền).
+    *   Khi hoàn tất, chạy script `analyze_pruning_weights.py` để phân tích trọng số kênh đã học. Kết quả này sẽ quyết định các kênh được chọn cho các thử nghiệm Giai đoạn 2 trong tương lai.
+
+- **Date:** 2025年10月3日金曜日
+
+## Tóm tắt Phiên làm việc: Tái cấu trúc để So sánh Công bằng
+
+**Bối cảnh:** Phiên làm việc bắt đầu với mục tiêu cải tiến các model nhẹ đã thành công. Tuy nhiên, một sai sót nghiêm trọng trong phương pháp luận đã được phát hiện, dẫn đến một cuộc tái cấu trúc lớn.
+
+**Tóm tắt các hoạt động:**
+
+1.  **Thành công (tạm thời) của `cbsfnet_light_exp2`:**
+    *   Tiến hành huấn luyện phiên bản nhẹ của `CB-SFNet` với `base_filters=8`.
+    *   **Kết quả:** Đạt **mIoU 0.7466** với **0.53M** tham số. Kết quả này ban đầu được coi là rất thành công.
+
+2.  **Phát hiện Lỗi phương pháp luận:**
+    *   **Vấn đề:** Người dùng đã chỉ ra rằng kiến trúc U-Net backbone của `ASRAN_LBS` (model Gumbel-Softmax) và `CB-SFNet` (model phiên bản nhẹ) **không đồng nhất**. Cụ thể, `CB-SFNet` có một tầng down-sampling (`down4`) sâu hơn, làm thay đổi toàn bộ cấu trúc so với U-Net tiêu chuẩn được dùng trong `ASRAN_LBS`.
+    *   **Hệ quả:** Việc so sánh mIoU giữa hai model này là **không hợp lệ**. Toàn bộ kết quả của `cbsfnet_light_exp2` bị vô hiệu hóa cho mục đích so sánh trực tiếp.
+
+3.  **Hành động Tái cấu trúc (Refactoring) để Thống nhất Backbone:**
+    *   **Mục tiêu:** Tạo ra một sân chơi công bằng bằng cách định nghĩa một kiến trúc U-Net "chuẩn" và áp dụng nó cho tất cả các thử nghiệm.
+    *   **Các bước thực hiện:**
+        1.  **Tạo `backbones.py`:** Tạo một file mới `src/models/backbones.py` để chứa các khối xây dựng U-Net tiêu chuẩn (`StandardDoubleConv`, `StandardDown`, `StandardUp`, `StandardOutConv`) và một lớp `StandardUNet` hoàn chỉnh.
+        2.  **Tái cấu trúc `asran_lbs.py`:** Sửa đổi model `ASRAN_LBS` để loại bỏ các khối "Compact" U-Net cục bộ và thay thế bằng việc sử dụng `StandardUNet` từ `backbones.py`.
+        3.  **Tạo `cbsfnet_unified.py`:** Tạo một model `CB_SFNet_Unified` hoàn toàn mới. Model này được xây dựng lại từ đầu bằng cách sử dụng các khối `Standard` từ `backbones.py`. Quan trọng nhất, nó có cùng độ sâu (4 tầng down-sampling) và cấu trúc như `StandardUNet`, đảm bảo sự so sánh công bằng. Các đặc trưng của `MDSA-Net` được chèn vào bottleneck một cách hợp lý mà không làm thay đổi kiến trúc U-Net nền.
+        4.  **Đăng ký Model mới:** Cập nhật `src/models/__init__.py` để đăng ký model `CB_SFNet_Unified` mới.
+        5.  **Chuẩn bị Thử nghiệm mới:** Tạo file config `configs/cbsfnet_unified_exp1_config.yaml` cho thử nghiệm sắp tới.
+**Tóm tắt các hoạt động và Kết quả:**
+
+1.  **Thử nghiệm `cbsfnet_unified_exp3_cosine` (Đã hoàn thành):**
+    *   **Mục tiêu:** Tối ưu hóa `CB_SFNet_Unified` với augmentation nâng cao và scheduler `CosineAnnealingLR`.
+    *   **Kết quả:** Đạt **mIoU tốt nhất là 0.7792** (tại epoch 119).
+    *   **Kết luận:** `CosineAnnealingLR` rất hiệu quả cho `CB_SFNet_Unified`, thiết lập một kỷ lục mIoU mới cho kiến trúc này. Tuy nhiên, model này không thực hiện chọn band, nên không phù hợp với mục tiêu chính đã được làm rõ.
+
+2.  **Thử nghiệm `asran_lbs_exp3_aug_cosine` (Đã hoàn thành):**
+    *   **Mục tiêu:** Áp dụng augmentation nâng cao và scheduler `CosineAnnealingLR` cho `ASRAN_LBS`.
+    *   **Kết quả:** Đạt **mIoU tốt nhất là 0.7009**.
+    *   **Phân tích:** Kết quả này thấp hơn đáng kể so với baseline `ASRAN_LBS_exp2_base8` (0.7241 mIoU), cho thấy sự kết hợp này đã làm giảm hiệu suất.
+
+3.  **Các Thử nghiệm Cô lập cho `ASRAN_LBS` (Để tìm nguyên nhân suy giảm hiệu suất):**
+    *   **Mục tiêu:** Xác định yếu tố nào (augmentation nâng cao hay `CosineAnnealingLR`) gây ra sự suy giảm hiệu suất cho `ASRAN_LBS`.
+
+    *   **Thử nghiệm `asran_lbs_exp4_cosine_only` (Đã hoàn thành):**
+        *   **Cấu hình:** `ASRAN_LBS` với augmentation cơ bản và `CosineAnnealingLR`.
+        *   **Kết quả:** Đạt **mIoU tốt nhất là 0.6998**.
+        *   **Kết luận:** `CosineAnnealingLR` một mình cũng gây ra sự suy giảm hiệu suất cho `ASRAN_LBS` so với baseline.
+
+    *   **Thử nghiệm `asran_lbs_exp5_aug_only` (Đã hoàn thành 1-epoch test):**
+        *   **Cấu hình:** `ASRAN_LBS` với augmentation nâng cao và `ReduceLROnPlateau`.
+        *   **Kết quả (1-epoch):** Đạt **mIoU 0.1148**.
+        *   **Kết luận:** Augmentation nâng cao gây ra sự suy giảm hiệu suất rất mạnh cho `ASRAN_LBS` ngay từ đầu.
+
+**Kết luận Tổng thể từ các Thử nghiệm Cô lập:**
+
+Cả augmentation nâng cao và scheduler `CosineAnnealingLR` đều gây ra sự suy giảm hiệu suất cho `ASRAN_LBS` khi áp dụng riêng lẻ hoặc kết hợp. Điều này cho thấy `ASRAN_LBS` có thể nhạy cảm hơn với các thay đổi này so với `CB_SFNet_Unified`.
+
+**Kế hoạch cho Phiên làm việc tiếp theo:**
+
+*   **Định hướng:** Quay lại cấu hình tốt nhất đã biết của `ASRAN_LBS` (`asran_lbs_exp2_base8`) làm baseline.
+*   **Hành động:** Bắt đầu tinh chỉnh `LearnableBandSelector` (ví dụ: `num_select_bands`, `temperature`) với cấu hình baseline đã được chứng minh là ổn định.

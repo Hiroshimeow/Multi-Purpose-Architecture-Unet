@@ -14,6 +14,10 @@ from .vit_unet import ViT_UNet
 from .unet_base import UNetBase
 from .unet_prunable import UnetPrunable
 from .cbsfnet import CB_SFNet # Added for pruning experiment
+from .cbsfnet_unified import CB_SFNet_Unified
+from .cbsfnet_ag import CB_SFNet_AG
+from .gemini_unet_v2 import GeminiUNetV2
+from .simple_unet import SimpleUNet
 
 # --- Import model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI) ---
 # import sys
@@ -40,12 +44,15 @@ def get_model(name: str, params: dict):
         'UnetDeepSupervision': UnetDeepSupervision,
         'ASRAN': ASRAN,
         'CB_SFNet': CB_SFNet,
+        'CB_SFNet_Unified': CB_SFNet_Unified,
+        'CB_SFNet_AG': CB_SFNet_AG,
         'ASRAN_LBS': ASRAN_LBS,
         'ViT_UNet': ViT_UNet,
         'UnetPrunable': UnetPrunable,
+        'GeminiUNetV2': GeminiUNetV2,
+        'SimpleUNet': SimpleUNet,
 
         # Model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI)
-        # 'GeminiUNetV2': GeminiUNetV2,
         # 'FlashUNet': FlashUNet,
         # 'GeminiUNet': GeminiUNet,
         # 'HybridUNet': HybridUNet,

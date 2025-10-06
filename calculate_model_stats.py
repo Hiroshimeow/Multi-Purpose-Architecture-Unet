@@ -4,6 +4,7 @@ from thop import profile
 from torchsummary import summary
 import yaml
 import importlib
+import re
 
 def calculate_stats_from_config(config_path, device='cpu'):
     print(f"\n--- Calculating stats for model from config: {config_path} ---")
@@ -21,12 +22,17 @@ def calculate_stats_from_config(config_path, device='cpu'):
     elif model_name == "CB_SFNet":
         module = importlib.import_module("src.models.cbsfnet")
         model_class = getattr(module, "CB_SFNet")
+    elif model_name == "GeminiUNetV2":
+        module = importlib.import_module("src.models.gemini_unet_v2")
+        model_class = getattr(module, "GeminiUNetV2")
     else:
         try:
-            module = importlib.import_module(f"src.models.{model_name.lower()}")
+            # Convert CamelCase to snake_case for filename, e.g., GeminiUNetV2 -> gemini_unet_v2
+            module_name_snake = re.sub(r'(?<!^)(?=[A-Z])', '_', model_name).lower()
+            module = importlib.import_module(f"src.models.{module_name_snake}")
             model_class = getattr(module, model_name)
         except (ImportError, AttributeError):
-            raise ValueError(f"Model {model_name} not found in src/models or class name mismatch.")
+            raise ValueError(f"Model {model_name} not found. Attempted to load from 'src.models.{module_name_snake}'. Check filename and class name.")
 
     # Determine input_channels based on data_dir
     if "pca_3band" in data_dir:
@@ -39,8 +45,9 @@ def calculate_stats_from_config(config_path, device='cpu'):
     # Override in_channels in model_params if it exists
     model_params['in_channels'] = input_channels
 
-    # Create a dummy input based on the determined input_channels
-    input_size = (1, input_channels, 224, 224) # Assuming 224x224 patch size
+    # Create a dummy input based on the config
+    patch_size = config.get('data', {}).get('patching', {}).get('patch_size', 224)
+    input_size = (1, input_channels, patch_size, patch_size)
 
     model = model_class(**model_params).to(device)
     dummy_input = torch.randn(input_size).to(device)
