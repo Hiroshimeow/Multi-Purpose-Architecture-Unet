@@ -1,10 +1,12 @@
-
 import numpy as np
 from scipy.stats import entropy
 from sklearn.cluster import KMeans
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.feature_selection import RFE
 from sklearn.svm import SVC
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 def entropy_selection(data, top_k=5):
     """
@@ -106,3 +108,39 @@ def sad_selection(data, top_k=5):
     selected_indices = np.argsort(sad_scores)[-top_k:]
     print(f"SAD-based selected band indices: {selected_indices}")
     return selected_indices
+
+# ============================================================
+# Learnable Band Selector (Deep Learning)
+# ============================================================
+
+class LearnableBandSelector(nn.Module):
+    """
+    Selects the top-k bands from the input using a learnable Gumbel-Softmax mechanism.
+    This is a "hard" selection mechanism that is differentiable.
+    """
+    def __init__(self, in_channels: int, num_select_bands: int, temperature: float = 1.0):
+        super(LearnableBandSelector, self).__init__()
+        if num_select_bands > in_channels:
+            raise ValueError(f"num_select_bands ({num_select_bands}) cannot be greater than in_channels ({in_channels}).")
+        self.in_channels = in_channels
+        self.num_select_bands = num_select_bands
+        self.temperature = temperature
+        
+        # Learnable logits for each band. Higher logit means higher probability of being selected.
+        self.logits = nn.Parameter(torch.randn(in_channels))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x shape: (B, C, H, W)
+        
+        if self.training:
+            # Use Gumbel-TopK trick for differentiable hard selection
+            gumbel_noise = -torch.log(-torch.log(torch.rand_like(self.logits)))
+            _, top_k_indices = torch.topk(self.logits + gumbel_noise, self.num_select_bands, dim=-1)
+        else:
+            # During inference, just pick the top-k bands based on the learned logits
+            _, top_k_indices = torch.topk(self.logits, self.num_select_bands, dim=-1)
+
+        # Gather the channels based on the selected indices
+        output = torch.index_select(x, dim=1, index=top_k_indices)
+        
+        return output

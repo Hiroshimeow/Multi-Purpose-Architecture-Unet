@@ -233,18 +233,26 @@ def main(args):
     )
     print(f"✓ Calculated class weights: {class_weights}")
 
+    loss_cfg = config.get('loss') or config['training'].get('loss') or config['training'].get('loss_function')
+    if not loss_cfg:
+        raise ValueError("Loss function configuration not found in config['training']")
+
     criterion = get_loss(
-        name=config['loss']['name'],
-        params=config['loss'].get('params', {}),
+        name=loss_cfg['name'],
+        params=loss_cfg.get('params', {}),
         class_weights=class_weights,
         device=device
     ).to(device)
 
-    optimizer = getattr(optim, config['optimizer']['name'])(model.parameters(), **config['optimizer']['params'])
+    optimizer_cfg = config.get('optimizer') or config['training']['optimizer']
+    optimizer = getattr(optim, optimizer_cfg['name'])(model.parameters(), **optimizer_cfg['params'])
 
     # Cấu hình scheduler linh hoạt hơn
-    scheduler_params = config['scheduler'].get('params', {}).copy()
-    scheduler_name = config['scheduler']['name']
+    scheduler_cfg = config.get('scheduler') or config['training'].get('scheduler')
+    if not scheduler_cfg:
+        raise ValueError("Scheduler configuration not found in config['training']")
+    scheduler_params = scheduler_cfg.get('params', {}).copy()
+    scheduler_name = scheduler_cfg['name']
     if scheduler_name == 'CosineAnnealingLR':
         scheduler_params['T_max'] = config['training']['num_epochs']
 
@@ -253,7 +261,8 @@ def main(args):
     trainer = Trainer(
         model=model, optimizer=optimizer, scheduler=scheduler, criterion=criterion,
         train_loader=train_loader, val_loader=val_loader,
-        manager=manager, device=device, config=config
+        manager=manager, device=device, config=config,
+        num_epochs=config['training'].get('epochs', config['training']['num_epochs'])
     )
     trainer.train()
 

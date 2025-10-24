@@ -123,7 +123,7 @@ def main():
         print(f"\n✓ Comparison summary saved to {save_path}")
 
         # Generate comparison plots
-        comparison_output_dir = Path("training_runs") / "GeminiUNetV2_run_COMPARE"
+        comparison_output_dir = Path("training_runs") / "run_COMPARE"
         plotter.plot_comparison_metrics(comparison_df, comparison_output_dir)
 
 if __name__ == '__main__':

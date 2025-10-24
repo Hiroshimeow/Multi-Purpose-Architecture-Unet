@@ -18,6 +18,7 @@ from .cbsfnet_unified import CB_SFNet_Unified
 from .cbsfnet_ag import CB_SFNet_AG
 from .gemini_unet_v2 import GeminiUNetV2
 from .simple_unet import SimpleUNet
+from .backbones import StandardUNet
 
 # --- Import model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI) ---
 # import sys
@@ -51,6 +52,7 @@ def get_model(name: str, params: dict):
         'UnetPrunable': UnetPrunable,
         'GeminiUNetV2': GeminiUNetV2,
         'SimpleUNet': SimpleUNet,
+        'StandardUNet': StandardUNet,
 
         # Model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI)
         # 'FlashUNet': FlashUNet,
