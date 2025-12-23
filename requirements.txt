@@ -10,5 +10,7 @@ opencv-python-headless
 albumentations
 h5py
 scipy
-pandasthop
+pandas
+thop
 kornia
+gdown

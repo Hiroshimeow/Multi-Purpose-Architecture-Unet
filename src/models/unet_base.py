@@ -26,6 +26,7 @@ from .base_blocks import DoubleConv, Down, Up, OutConv
 class UNetBase(nn.Module):
     def __init__(self, in_channels, num_classes, bilinear=True, initial_filters=64, depth=4, attention_block=None, **kwargs):
         super(UNetBase, self).__init__()
+        print(f"DEBUG: UNetBase init. initial_filters={initial_filters}, depth={depth}, bilinear={bilinear}")
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.bilinear = bilinear
@@ -45,6 +46,7 @@ class UNetBase(nn.Module):
         factor = 2 if bilinear else 1
         bottleneck_in = initial_filters * (2**(depth - 1))
         bottleneck_out = bottleneck_in * 2 // factor
+        print(f"DEBUG: Bottleneck in={bottleneck_in}, out={bottleneck_out}")
         self.bottleneck = self.create_down_block(bottleneck_in, bottleneck_out, attention_block)
 
 
@@ -52,11 +54,16 @@ class UNetBase(nn.Module):
         self.decoders = nn.ModuleList()
         for i in range(depth - 1, -1, -1):
             # Số kênh từ tầng decoder trước (tầng sâu hơn)
-            up_in_channels = initial_filters * (2**(i+1)) // factor
+            if i == depth - 1:
+                up_in_channels = bottleneck_out
+            else:
+                up_in_channels = initial_filters * (2**(i+1))
+            
             # Số kênh từ skip connection tương ứng
             up_out_channels = initial_filters * (2**i)
             # Số kênh đầu ra của khối Up này
             out_ch = initial_filters * (2**i)
+            print(f"DEBUG: Decoder i={i}, up_in={up_in_channels}, up_out={up_out_channels}, out_ch={out_ch}")
             self.decoders.append(
                 Up(up_in_channels, up_out_channels, out_ch, bilinear)
             )

@@ -18,6 +18,11 @@ class TiledHyperspectralDataset(Dataset):
         self.file_paths = file_paths
         self.stats = stats
 
+        # Support for specific band selection
+        self.selected_bands = config['model']['params'].get('selected_bands_indices', None)
+        if self.selected_bands is not None:
+             print(f"Dataset: Selecting specific bands indices: {self.selected_bands}")
+
         ps = config['data']['patching']['patch_size']
         st = config['data']['patching']['stride']
         self.patch_size = (ps, ps) if isinstance(ps, int) else tuple(ps)
@@ -59,6 +64,9 @@ class TiledHyperspectralDataset(Dataset):
         if self.config['data'].get('normalization') == 'z-score':
             if self.stats is None: raise ValueError("Z-score normalization requires stats (mean, std).")
             mean, std = self.stats['mean'].reshape(1, 1, -1), self.stats['std'].reshape(1, 1, -1)
+            # If we selected bands, we need to slice the stats too if they were calculated on full 25 bands
+            # But usually stats are calculated on the input passed to the model.
+            # Assuming stats match the cube shape here.
             return (cube - mean) / (std + 1e-8)
         else: # Per-image min-max
             for i in range(cube.shape[2]):
@@ -85,9 +93,20 @@ class TiledHyperspectralDataset(Dataset):
         if not os.path.exists(mask_path): mask_path = os.path.join(mask_path_dir, f"{base_name.replace('_TC', '')}.png")
 
         try:
-            full_cube, full_mask = self._load_cube(cube_path), self._load_mask(mask_path)
-        except (FileNotFoundError, ValueError) as e:
-            print(f"Warning: Skipping file due to error: {e}"); return
+            full_cube = self._load_cube(cube_path)
+            full_mask = self._load_mask(mask_path)
+        except (FileNotFoundError, ValueError, OSError) as e:
+            # Catch OSError for bad image files (corrupted during unzip)
+            # print(f"Warning: Skipping file due to error: {e}")
+            return
+
+        # Slice bands if selected_bands is set
+        if self.selected_bands is not None:
+            try:
+                full_cube = full_cube[:, :, self.selected_bands]
+            except IndexError as e:
+                 print(f"Error slicing cube {cube_path}: {e}")
+                 return
 
         full_mask = self._apply_class_mapping(full_mask)
         full_cube = self._normalize_cube(full_cube)

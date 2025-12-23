@@ -1,68 +1,32 @@
 # src/models/__init__.py
 
-# --- Import các lớp model mới ---
-from .unet_cbam import UnetCbam
-from .unet_seattention import UnetSEAttention
-from .unet_bandselector import UnetBandS
-from .unet_cbam_seattention import UnetCbamSeattention
-from .unet_bcd import UnetBcd
-from .unet_depthwiseseparable import UnetDepthwiseSeparable
-from .unet_deepsupervision import UnetDeepSupervision
+# Essential models for the experiment
+from .unet_bandselector import UnetBandS as OriginalUnetBandS
+# from .backbones import StandardUNet # Missing
 from .asran_network import ASRAN
-from .asran_lbs import ASRAN_LBS
-from .vit_unet import ViT_UNet
 from .unet_base import UNetBase
-from .unet_prunable import UnetPrunable
-from .cbsfnet import CB_SFNet # Added for pruning experiment
-from .cbsfnet_unified import CB_SFNet_Unified
-from .cbsfnet_ag import CB_SFNet_AG
-from .gemini_unet_v2 import GeminiUNetV2
-from .simple_unet import SimpleUNet
-from .backbones import StandardUNet
 
-# --- Import model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI) ---
-# import sys
-# from pathlib import Path
-# sys.path.append(str(Path(__file__).parent.parent.parent))
-# from models_ignored_temp.gemini_unet_v2 import GeminiUNetV2
-# from models_ignored_temp.flash_unet import FlashUNet
-# from models_ignored_temp.gemini_unet import GeminiUNet
-# from models_ignored_temp.hybrid_unet import HybridUNet
+class StandardUNet(UNetBase):
+    def __init__(self, base_filters=64, use_sa=False, **kwargs):
+        # Map base_filters to initial_filters
+        super().__init__(initial_filters=base_filters, **kwargs)
+
+class ASRAN_LBS(OriginalUnetBandS):
+    def __init__(self, base_filters=64, **kwargs):
+        # Map base_filters to initial_filters for the inner UNet
+        super().__init__(initial_filters=base_filters, **kwargs)
 
 def get_model(name: str, params: dict):
     """
-    Model factory mới, linh hoạt.
-    Tên model giờ đây tương ứng trực tiếp với tên class.
+    Model factory.
     """
     models = {
-        # Model mới
-        'UnetCbam': UnetCbam,
-        'UnetSEAttention': UnetSEAttention,
-        'UnetBandS': UnetBandS,
-        'UnetCbamSeattention': UnetCbamSeattention,
-        'UnetBcd': UnetBcd,
-        'UnetDepthwiseSeparable': UnetDepthwiseSeparable,
-        'UnetDeepSupervision': UnetDeepSupervision,
-        'ASRAN': ASRAN,
-        'CB_SFNet': CB_SFNet,
-        'CB_SFNet_Unified': CB_SFNet_Unified,
-        'CB_SFNet_AG': CB_SFNet_AG,
         'ASRAN_LBS': ASRAN_LBS,
-        'ViT_UNet': ViT_UNet,
-        'UnetPrunable': UnetPrunable,
-        'GeminiUNetV2': GeminiUNetV2,
-        'SimpleUNet': SimpleUNet,
         'StandardUNet': StandardUNet,
-
-        # Model cũ để tương thích ngược (ĐÃ BỊ XÓA VÌ GÂY LỖI)
-        # 'FlashUNet': FlashUNet,
-        # 'GeminiUNet': GeminiUNet,
-        # 'HybridUNet': HybridUNet,
+        'ASRAN': ASRAN,
     }
 
     if name in models:
-        # If a nested 'params' key exists, use it for the model's kwargs.
-        # Otherwise, fall back to the old behavior for compatibility with other models.
         if 'params' in params:
             model_params = params['params']
         else:

@@ -119,8 +119,20 @@ class Trainer:
                     self.manager.save_prediction_samples(val_samples)
             else:
                 patience_counter += 1
-            checkpoint_state = {'epoch': epoch_num, 'model_state_dict': self.model.state_dict(), 'optimizer_state_dict': self.optimizer.state_dict(), 'scheduler_state_dict': self.scheduler.state_dict(), 'best_miou': self.best_miou, 'scaler_state_dict': self.scaler.state_dict()}
+            
+            # Prepare rich metadata checkpoint
+            checkpoint_state = {
+                'epoch': epoch_num,
+                'model_state_dict': self.model.state_dict(),
+                'optimizer_state_dict': self.optimizer.state_dict(),
+                'scheduler_state_dict': self.scheduler.state_dict(),
+                'best_miou': self.best_miou,
+                'scaler_state_dict': self.scaler.state_dict(),
+                'config': self.config,
+                'seed': self.config.get('data', {}).get('seed', None)
+            }
             self.manager.save_checkpoint(state=checkpoint_state, is_best=is_best)
+            
             if patience_counter >= self.config['training']['early_stopping_patience']:
                 print(f"🛑 Early stopping triggered after {patience_counter} epochs without improvement.")
                 break
@@ -136,12 +148,20 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             with torch.amp.autocast(device_type=self.device.type, dtype=torch.float16, enabled=(self.device.type == 'cuda')):
                 outputs = self.model(images)
-                if self.use_sr_head and isinstance(outputs, dict):
-                    seg_loss = self.criterion(outputs['segmentation'], masks)
-                    recon_loss = F.mse_loss(outputs['reconstruction'], outputs['original_input'])
-                    loss = seg_loss + self.recon_lambda * recon_loss
+                
+                # Generic handling of dictionary outputs
+                if isinstance(outputs, dict):
+                    seg_logits = outputs.get('segmentation', outputs) # Fallback to outputs if key missing (unlikely)
+                    if 'reconstruction' in outputs and self.use_sr_head:
+                         seg_loss = self.criterion(seg_logits, masks)
+                         recon_loss = F.mse_loss(outputs['reconstruction'], outputs['original_input'])
+                         loss = seg_loss + self.recon_lambda * recon_loss
+                    else:
+                         loss = self.criterion(seg_logits, masks)
                 else:
+                    seg_logits = outputs
                     loss = self.criterion(outputs, masks)
+
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -161,14 +181,20 @@ class Trainer:
                 masks = masks.to(self.device, non_blocking=True)
                 with torch.amp.autocast(device_type=self.device.type, dtype=torch.float16, enabled=(self.device.type == 'cuda')):
                     outputs = self.model(images)
-                    if self.use_sr_head and isinstance(outputs, dict):
-                        seg_loss = self.criterion(outputs['segmentation'], masks)
-                        recon_loss = F.mse_loss(outputs['reconstruction'], outputs['original_input'])
-                        loss = seg_loss + self.recon_lambda * recon_loss
-                        seg_logits = outputs['segmentation']
+                    
+                    # Generic handling of dictionary outputs
+                    if isinstance(outputs, dict):
+                        seg_logits = outputs.get('segmentation', outputs)
+                        if 'reconstruction' in outputs and self.use_sr_head:
+                             seg_loss = self.criterion(seg_logits, masks)
+                             recon_loss = F.mse_loss(outputs['reconstruction'], outputs['original_input'])
+                             loss = seg_loss + self.recon_lambda * recon_loss
+                        else:
+                             loss = self.criterion(seg_logits, masks)
                     else:
-                        loss = self.criterion(outputs, masks)
                         seg_logits = outputs
+                        loss = self.criterion(outputs, masks)
+
                 total_loss += loss.item()
                 preds = torch.argmax(seg_logits, dim=1)
                 all_preds.append(preds.cpu().numpy())

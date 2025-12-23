@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: Exp_Entropy_k5_s42
+Full Path: training_runs/Exp_Entropy_k5_s42_20251223_174423
+Training Duration: 0:01:35
+Completed Epochs: 2
+Best Validation mIoU: 0.2568
+Params (M): 0.17M
+
+--- Performance Benchmark ---
+- FPS: 259.30
+- Latency: 61.70 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+- GFLOPs: 0.68
+- Efficiency (mIoU/GFLOPs): 0.3761
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.5641, Dice = 0.7213
+- RoadLine                 : IoU = 0.1586, Dice = 0.2738
+- Vegetation               : IoU = 0.0002, Dice = 0.0003
+- Sky                      : IoU = 0.2541, Dice = 0.4052
+- NoDrivable               : IoU = 0.3072, Dice = 0.4700
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.8842  0.6091    0.7213 4486802.0000
+RoadLine         0.8848  0.1619    0.2738  900419.0000
+Vegetation       0.0002  0.0688    0.0003    1846.0000
+Sky              0.7249  0.2812    0.4052  706812.0000
+NoDrivable       0.3196  0.8877    0.4700  978937.0000
+accuracy         0.5578  0.5578    0.5578       0.5578
+macro avg        0.5628  0.4017    0.3741 7074816.0000
+weighted avg     0.7900  0.5578    0.5978 7074816.0000
