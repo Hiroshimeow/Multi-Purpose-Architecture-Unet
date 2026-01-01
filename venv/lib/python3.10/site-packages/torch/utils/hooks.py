@@ -3,7 +3,7 @@ import torch
 from collections import OrderedDict
 import weakref
 import warnings
-from typing import Any
+from typing import Any, Tuple
 
 __all__ = ["RemovableHandle", "unserializable_hook", "warn_if_has_hooks", "BackwardHook"]
 
@@ -26,7 +26,7 @@ class RemovableHandle:
         self.id = RemovableHandle.next_id
         RemovableHandle.next_id += 1
 
-        self.extra_dict_ref: tuple = ()
+        self.extra_dict_ref: Tuple = ()
         if isinstance(extra_dict, dict):
             self.extra_dict_ref = (weakref.ref(extra_dict),)
         elif isinstance(extra_dict, list):
@@ -120,7 +120,9 @@ class BackwardHook:
         return tuple(res)
 
     def _unpack_none(self, indices, values):
-        res = [values[idx] for idx in indices]
+        res = []
+        for idx in indices:
+            res.append(values[idx])
 
         return tuple(res)
 
@@ -223,11 +225,6 @@ class BackwardHook:
                 # Special case if no input required gradients, this hook should call the user
                 # hook directly
                 if self.input_tensors_index is None:
-                    warnings.warn("Full backward hook is firing when gradients are computed "
-                                  "with respect to module outputs since no inputs require gradients. See "
-                                  "https://docs.pytorch.org/docs/main/generated/torch.nn.Module.html#torch.nn.Module.register_full_backward_hook "  # noqa: B950
-                                  "for more details.",
-                                  stacklevel=5)
                     grad_inputs = self._pack_with_none([], [], self.n_inputs)
                     for user_hook in self.user_hooks:
                         res = user_hook(self.module, grad_inputs, self.grad_outputs)

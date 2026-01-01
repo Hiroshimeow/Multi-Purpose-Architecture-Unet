@@ -21,16 +21,16 @@ Kiến trúc UNetBase (Xương sống)
 """
 import torch
 import torch.nn as nn
-from .base_blocks import DoubleConv, Down, Up, OutConv
+from .base_blocks import DoubleConv, Down, Up, OutConv, DoubleDSConv
 
 class UNetBase(nn.Module):
-    def __init__(self, in_channels, num_classes, bilinear=True, initial_filters=64, depth=4, attention_block=None, **kwargs):
+    def __init__(self, in_channels, num_classes, bilinear=True, initial_filters=64, depth=4, attention_block=None, lightweight=False, **kwargs):
         super(UNetBase, self).__init__()
-        print(f"DEBUG: UNetBase init. initial_filters={initial_filters}, depth={depth}, bilinear={bilinear}")
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.bilinear = bilinear
         self.depth = depth
+        self.lightweight = lightweight
 
         # --- Encoder ---
         self.inc = self.create_conv_block(in_channels, initial_filters, attention_block)
@@ -45,44 +45,47 @@ class UNetBase(nn.Module):
         # --- Bottleneck ---
         factor = 2 if bilinear else 1
         bottleneck_in = initial_filters * (2**(depth - 1))
-        bottleneck_out = bottleneck_in * 2 // factor
-        print(f"DEBUG: Bottleneck in={bottleneck_in}, out={bottleneck_out}")
+        bottleneck_out = bottleneck_in * 2 // factor # This is the number of channels output by the bottleneck Down block
         self.bottleneck = self.create_down_block(bottleneck_in, bottleneck_out, attention_block)
-
 
         # --- Decoder ---
         self.decoders = nn.ModuleList()
+        # Track the input channels for the current decoder stage, starting with the bottleneck's output
+        current_decoder_input_channels = bottleneck_out 
+
         for i in range(depth - 1, -1, -1):
-            # Số kênh từ tầng decoder trước (tầng sâu hơn)
-            if i == depth - 1:
-                up_in_channels = bottleneck_out
-            else:
-                up_in_channels = initial_filters * (2**(i+1))
-            
-            # Số kênh từ skip connection tương ứng
-            up_out_channels = initial_filters * (2**i)
-            # Số kênh đầu ra của khối Up này
-            out_ch = initial_filters * (2**i)
-            print(f"DEBUG: Decoder i={i}, up_in={up_in_channels}, up_out={up_out_channels}, out_ch={out_ch}")
+            # The skip connection comes from an encoder stage that is 2^(i) times initial_filters
+            skip_channels = initial_filters * (2**i)
+
+            # The desired output channels for this Up block's DoubleConv
+            output_channels = initial_filters * (2**i)
+
             self.decoders.append(
-                Up(up_in_channels, up_out_channels, out_ch, bilinear)
+                Up(current_decoder_input_channels, skip_channels, output_channels, bilinear)
             )
+            # The output of this current Up block (output_channels) will be the input to the next Up block
+            current_decoder_input_channels = output_channels
 
         self.outc = OutConv(initial_filters, num_classes)
 
     def create_conv_block(self, in_c, out_c, attention_block):
+        conv_block = DoubleDSConv(in_c, out_c) if self.lightweight else DoubleConv(in_c, out_c)
         if attention_block:
-            return nn.Sequential(DoubleConv(in_c, out_c), attention_block(out_c))
-        return DoubleConv(in_c, out_c)
+            return nn.Sequential(conv_block, attention_block(out_c))
+        return conv_block
 
     def create_down_block(self, in_c, out_c, attention_block):
+        conv_block = DoubleDSConv(in_c, out_c) if self.lightweight else DoubleConv(in_c, out_c)
         if attention_block:
             return nn.Sequential(
                 nn.MaxPool2d(2),
-                DoubleConv(in_c, out_c),
+                conv_block,
                 attention_block(out_c)
             )
-        return Down(in_c, out_c)
+        return nn.Sequential(
+            nn.MaxPool2d(2),
+            conv_block,
+        )
 
     def forward(self, x):
         skip_connections = []

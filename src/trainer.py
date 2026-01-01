@@ -52,15 +52,15 @@ class Trainer:
             model_name = model_cfg.get('name', '')
 
             # FIX: Determine in_channels for dummy_input correctly
-            if model_name == 'ASRAN_LBS':
-                # ASRAN_LBS always takes the full channel count as input
+            if model_name == 'TABS':
+                # ASRAN_LBS always takes the full channel count as input for the band selector module
                 in_channels = model_params['in_channels']
             else:
-                # For other models, use num_selected_bands if available (for pre-selected data)
-                if 'num_select_bands' in model_params and model_params['num_select_bands'] is not None:
-                    in_channels = model_params['num_select_bands']
-                elif 'in_channels' in model_params:
+                # For baseline models, 'in_channels' is explicitly set to 'k'. Prioritize it.
+                if 'in_channels' in model_params:
                     in_channels = model_params['in_channels']
+                elif 'num_select_bands' in model_params and model_params['num_select_bands'] is not None:
+                    in_channels = model_params['num_select_bands']
                 else:
                     in_channels = 3 # Fallback
 

@@ -15,13 +15,18 @@ class TiledHyperspectralDataset(Dataset):
     def __init__(self, file_paths: list, config: dict, augment=False, stats=None):
         self.config = config
         self.augment = augment
-        self.file_paths = file_paths
+        self.file_paths_raw = file_paths # Keep original file paths for __getitem__
         self.stats = stats
 
         # Support for specific band selection
         self.selected_bands = config['model']['params'].get('selected_bands_indices', None)
+        self.num_selected_bands = len(self.selected_bands) if self.selected_bands is not None else 25
+
         if self.selected_bands is not None:
              print(f"Dataset: Selecting specific bands indices: {self.selected_bands}")
+        else:
+             print(f"Dataset: Using all {self.num_selected_bands} available bands.")
+
 
         ps = config['data']['patching']['patch_size']
         st = config['data']['patching']['stride']
@@ -52,24 +57,35 @@ class TiledHyperspectralDataset(Dataset):
         self.transforms = A.Compose(transforms_list)
         self.val_transforms = A.Compose([ToTensorV2()])
 
-        self.patches = []
-        print(f"Processing {len(self.file_paths)} files for {'training' if augment else 'validation'} set...")
-        for cube_path in tqdm(self.file_paths):
-            self._process_and_tile_image(cube_path)
+        # Instead of storing actual patches, store metadata (file_path, coords)
+        self.patch_metadata = [] 
+        print(f"Collecting patch coordinates for {len(self.file_paths_raw)} files for {'training' if augment else 'validation'} set...")
+        for cube_path in tqdm(self.file_paths_raw):
+            self._collect_patch_coordinates(cube_path)
         
-        if not self.patches:
-            print(f"WARNING: No patches were generated for this dataset part.")
+        if not self.patch_metadata:
+            print(f"WARNING: No patch metadata were generated for this dataset part.")
 
     def _normalize_cube(self, cube):
         if self.config['data'].get('normalization') == 'z-score':
             if self.stats is None: raise ValueError("Z-score normalization requires stats (mean, std).")
-            mean, std = self.stats['mean'].reshape(1, 1, -1), self.stats['std'].reshape(1, 1, -1)
-            # If we selected bands, we need to slice the stats too if they were calculated on full 25 bands
-            # But usually stats are calculated on the input passed to the model.
-            # Assuming stats match the cube shape here.
+            mean, std = self.stats['mean'], self.stats['std']
+            
+            # If selected_bands are used, stats also need to be for selected bands
+            if self.selected_bands is not None:
+                # Assuming stats are already calculated for the selected bands in calculate_zscore_stats
+                # Or, if stats are calculated on full 25 bands, we need to slice them here.
+                # For consistency, calculate_zscore_stats is modified to use selected_bands
+                pass 
+
+            # Reshape for broadcasting (1, 1, C)
+            mean = mean.reshape(1, 1, -1)
+            std = std.reshape(1, 1, -1)
+
             return (cube - mean) / (std + 1e-8)
         else: # Per-image min-max
-            for i in range(cube.shape[2]):
+            # Operate on the num_selected_bands (or 25 if no selection)
+            for i in range(cube.shape[2]): 
                 channel = cube[:, :, i]
                 min_val, max_val = np.min(channel), np.max(channel)
                 if max_val > min_val: cube[:, :, i] = (channel - min_val) / (max_val - min_val)
@@ -86,45 +102,67 @@ class TiledHyperspectralDataset(Dataset):
             mask = cv2.copyMakeBorder(mask, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=0)
         return image, mask
 
-    def _process_and_tile_image(self, cube_path):
-        base_name = os.path.splitext(os.path.basename(cube_path))[0]
-        mask_path_dir = os.path.dirname(cube_path).replace('cubes_fl32', 'labels')
-        mask_path = os.path.join(mask_path_dir, f"{base_name}.png")
-        if not os.path.exists(mask_path): mask_path = os.path.join(mask_path_dir, f"{base_name.replace('_TC', '')}.png")
+    def _collect_patch_coordinates(self, cube_file_path):
+        base_name = os.path.splitext(os.path.basename(cube_file_path))[0]
+        mask_path_dir = os.path.dirname(cube_file_path).replace('cubes_fl32', 'labels')
+        mask_file_path = os.path.join(mask_path_dir, f"{base_name}.png")
+        if not os.path.exists(mask_file_path): mask_file_path = os.path.join(mask_path_dir, f"{base_name.replace('_TC', '')}.png")
 
         try:
-            full_cube = self._load_cube(cube_path)
-            full_mask = self._load_mask(mask_path)
+            # We only load a small part of the cube to get its shape for tiling calculation
+            # This is efficient as we don't load the full data into memory yet
+            _dummy_cube = self._load_cube_header(cube_file_path) # New helper to load only shape
+            _dummy_mask = self._load_mask(mask_file_path)
         except (FileNotFoundError, ValueError, OSError) as e:
-            # Catch OSError for bad image files (corrupted during unzip)
-            # print(f"Warning: Skipping file due to error: {e}")
+            print(f"Warning: Skipping file {cube_file_path} due to error: {e}")
             return
-
-        # Slice bands if selected_bands is set
-        if self.selected_bands is not None:
-            try:
-                full_cube = full_cube[:, :, self.selected_bands]
-            except IndexError as e:
-                 print(f"Error slicing cube {cube_path}: {e}")
-                 return
-
-        full_mask = self._apply_class_mapping(full_mask)
-        full_cube = self._normalize_cube(full_cube)
-        full_cube, full_mask = self._pad_if_needed(full_cube, full_mask)
         
-        h, w, _ = full_cube.shape
+        # Apply band selection to dummy cube to get correct shape for tiling
+        if self.selected_bands is not None:
+             _dummy_cube = _dummy_cube[:, :, self.selected_bands]
+        
+        _dummy_cube, _dummy_mask = self._pad_if_needed(_dummy_cube, _dummy_mask) # Pad dummy data for tiling
+
+        h, w, _ = _dummy_cube.shape
         ph, pw = self.patch_size
         sh, sw = self.stride
 
         for y in range(0, h - ph + 1, sh):
             for x in range(0, w - pw + 1, sw):
-                self.patches.append((full_cube[y:y+ph, x:x+pw, :], full_mask[y:y+ph, x:x+pw]))
+                self.patch_metadata.append({
+                    'cube_path': cube_file_path,
+                    'mask_path': mask_file_path,
+                    'y': y, 'x': x,
+                    'ph': ph, 'pw': pw
+                })
 
     def __len__(self):
-        return len(self.patches)
+        return len(self.patch_metadata)
 
     def __getitem__(self, idx):
-        cube_patch, mask_patch = self.patches[idx]
+        metadata = self.patch_metadata[idx]
+        cube_path = metadata['cube_path']
+        mask_path = metadata['mask_path']
+        y, x = metadata['y'], metadata['x']
+        ph, pw = metadata['ph'], metadata['pw']
+
+        # Load full cube and mask on demand
+        full_cube = self._load_cube(cube_path)
+        full_mask = self._load_mask(mask_path)
+        
+        # Apply band selection if configured
+        if self.selected_bands is not None:
+            full_cube = full_cube[:, :, self.selected_bands]
+        
+        full_mask = self._apply_class_mapping(full_mask)
+        full_cube = self._normalize_cube(full_cube)
+        
+        # Pad again if needed, this time to the actual image to avoid boundary issues during tiling
+        full_cube, full_mask = self._pad_if_needed(full_cube, full_mask)
+
+        cube_patch = full_cube[y:y+ph, x:x+pw, :]
+        mask_patch = full_mask[y:y+ph, x:x+pw]
+
         transforms = self.transforms if self.augment else self.val_transforms
         transformed = transforms(image=cube_patch, mask=mask_patch)
         
@@ -140,6 +178,36 @@ class TiledHyperspectralDataset(Dataset):
 
         return transformed['image'], t_mask.long()
 
+    # Helper to load only shape for tiling calculation
+    def _load_cube_header(self, cube_path):
+        try:
+            # Use io.loadmat which is more robust to different .mat file versions
+            # Although it loads the whole file, it's necessary for stability here.
+            mat_data = io.loadmat(cube_path, mat_dtype=True, variable_names=[k[0] for k in io.whosmat(cube_path) if not k[0].startswith('__')])
+            data_keys = [k for k in mat_data.keys() if not k.startswith('__')]
+            if not data_keys: raise ValueError(f"No data found in {cube_path}")
+            cube_shape = mat_data[data_keys[0]].shape
+
+            if len(cube_shape) != 3:
+                raise ValueError(f"Cube {cube_path} is not 3D, shape is {cube_shape}")
+
+            # Find the channel dimension and return a dummy array of the transposed shape
+            try:
+                channel_dim_index = cube_shape.index(25)
+            except ValueError:
+                raise ValueError(f"Cube {cube_path} has shape {cube_shape}, but no dimension of size 25 was found.")
+
+            if channel_dim_index == 0: # (C, H, W)
+                return np.zeros((cube_shape[1], cube_shape[2], cube_shape[0]), dtype=np.float32)
+            elif channel_dim_index == 1: # (H, C, W)
+                return np.zeros((cube_shape[0], cube_shape[2], cube_shape[1]), dtype=np.float32)
+            else: # (H, W, C)
+                return np.zeros(cube_shape, dtype=np.float32)
+
+        except Exception as e:
+            # print(f"Error reading header for {cube_path}: {e}")
+            raise
+        
     def _load_cube(self, cube_path):
         ext = os.path.splitext(cube_path)[1]
         if ext == '.mat':
@@ -153,9 +221,30 @@ class TiledHyperspectralDataset(Dataset):
                 cube = np.array(f[key]).astype(np.float32)
         else:
             raise ValueError(f"Unsupported cube file format: {ext}")
-        
-        if cube.ndim == 3 and cube.shape[0] < cube.shape[2] and cube.shape[0] < cube.shape[1]:
+
+        # New, simpler transpose logic
+        if cube.ndim != 3:
+            raise ValueError(f"Cube {cube_path} has {cube.ndim} dimensions, expected 3.")
+
+        # Find the channel dimension (should be 25 for the full cube, or k for sliced cubes)
+        # This logic assumes the full cube is always loaded first from disk.
+        try:
+            channel_dim_index = cube.shape.index(25)
+        except ValueError:
+            # This path should ideally not be taken if we always load full cubes.
+            # But as a fallback, we can check for the selected number of bands.
+            try:
+                channel_dim_index = cube.shape.index(self.num_selected_bands)
+            except ValueError:
+                raise ValueError(f"Cube {cube_path} has shape {cube.shape}, but neither a dimension of 25 nor {self.num_selected_bands} was found.")
+
+        # Permute to (H, W, C)
+        if channel_dim_index == 0: # (C, H, W) -> (H, W, C)
             cube = np.transpose(cube, (1, 2, 0))
+        elif channel_dim_index == 1: # (H, C, W) -> (H, W, C)
+            cube = np.transpose(cube, (0, 2, 1))
+        # if channel_dim_index is 2, it's already (H, W, C), do nothing.
+
         return cube
 
     def _load_mask(self, mask_path):
