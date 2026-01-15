@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: Exp_SVM-RFE_k5_s42_d4i9
+Full Path: training_runs/Exp_SVM-RFE_k5_s42_d4i9_20251225_095932
+Training Duration: 1:26:53
+Completed Epochs: 319
+Best Validation mIoU: 0.7724
+Params (M): 0.25M
+
+--- Performance Benchmark ---
+- FPS: 106.89
+- Latency: 149.69 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+- GFLOPs: 0.82
+- Efficiency (mIoU/GFLOPs): 0.9454
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.9205, Dice = 0.9586
+- RoadLine                 : IoU = 0.6852, Dice = 0.8132
+- Vegetation               : IoU = 0.6716, Dice = 0.8036
+- Sky                      : IoU = 0.8168, Dice = 0.8992
+- NoDrivable               : IoU = 0.7678, Dice = 0.8686
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9657  0.9516    0.9586 3136535.0000
+RoadLine         0.8794  0.7562    0.8132  191629.0000
+Vegetation       0.8318  0.7772    0.8036  884361.0000
+Sky              0.9540  0.8503    0.8992  307618.0000
+NoDrivable       0.8424  0.8966    0.8686 2554673.0000
+accuracy         0.9002  0.9002    0.9002       0.9002
+macro avg        0.8947  0.8464    0.8686 7074816.0000
+weighted avg     0.9016  0.9002    0.9002 7074816.0000

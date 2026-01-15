@@ -1,0 +1,34 @@
+Traceback (most recent call last):
+  File "/data1/tabs/scripts/run.py", line 6, in <module>
+    import torch
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/__init__.py", line 2016, in <module>
+    from torch import _VF as _VF, functional as functional  # usort: skip
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/functional.py", line 7, in <module>
+    import torch.nn.functional as F
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/nn/__init__.py", line 8, in <module>
+    from torch.nn.modules import *  # usort: skip # noqa: F403
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/nn/modules/__init__.py", line 1, in <module>
+    from .module import Module  # usort: skip
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 29, in <module>
+    from torch.utils._python_dispatch import is_traceable_wrapper_subclass
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/__init__.py", line 8, in <module>
+    from torch.utils import (
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/data/__init__.py", line 1, in <module>
+    from torch.utils.data.dataloader import (
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 21, in <module>
+    import torch.utils.data.graph_settings
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/data/graph_settings.py", line 8, in <module>
+    from torch.utils.data.datapipes.iter.sharding import (
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/data/datapipes/__init__.py", line 1, in <module>
+    from torch.utils.data.datapipes import dataframe as dataframe, iter as iter, map as map
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/data/datapipes/iter/__init__.py", line 9, in <module>
+    from torch.utils.data.datapipes.iter.combining import (
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/data/datapipes/iter/combining.py", line 445, in <module>
+    class _DemultiplexerIterDataPipe(IterDataPipe, _ContainerTemplate):
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/data/datapipes/_typing.py", line 415, in __new__
+    return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/utils/data/datapipes/_typing.py", line 287, in __new__
+    return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
+  File "/usr/local/lib/python3.10/abc.py", line 107, in __new__
+    _abc_init(cls)
+KeyboardInterrupt

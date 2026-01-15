@@ -18,16 +18,7 @@ def get_model(name: str, params: dict):
     """
     models = {
         'TABS': TABS,
-        'StandardUNet': StandardUNet,
-        'ASRAN': ASRAN,
-    }
-
-def get_model(name: str, params: dict):
-    """
-    Model factory.
-    """
-    models = {
-        'TABS': TABS,
+        'ASRAN_LBS': TABS,
         'StandardUNet': StandardUNet,
         'ASRAN': ASRAN,
     }

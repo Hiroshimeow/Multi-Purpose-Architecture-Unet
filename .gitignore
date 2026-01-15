@@ -7,6 +7,7 @@
 
 # Allow specific file extensions
 !*.py
+!*.tex
 !*.txt
 !*.log
 !*.csv
@@ -15,6 +16,10 @@
 
 # Allow specific files without extensions if needed (e.g., Dockerfile)
 # !Dockerfile
+
+!/Image_dataset/
+!training_runs/
+!/thesis/
 
 # --- Blocklist ---
 # Re-ignore specific directories that should never be tracked
@@ -26,7 +31,7 @@ __pycache__/
 *.pyc
 
 # Re-ignore dataset and run directories
-/Image_dataset/
+
 /Image_dataset_3band/
 /Image_dataset_pca_3band/
 /dataset_40_for_test/

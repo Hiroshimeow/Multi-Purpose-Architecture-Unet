@@ -20,6 +20,14 @@ class Trainer:
         self.device = device
         self.config = config
         self.num_epochs = num_epochs
+        
+        # Safe CUDA/cuDNN initialization
+        if torch.cuda.is_available():
+            torch.backends.cudnn.enabled = False
+            torch.backends.cudnn.benchmark = False
+            torch.backends.cudnn.deterministic = True
+            print("   Disabled cuDNN to avoid CUDNN_STATUS_NOT_INITIALIZED error.")
+
         self.scaler = torch.amp.GradScaler(enabled=(self.device.type == 'cuda'))
         self.start_epoch = 0
         self.best_miou = 0.0

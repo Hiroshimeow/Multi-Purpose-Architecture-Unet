@@ -93,27 +93,72 @@ def plot_segmentation_results(samples: list, class_names: list, output_dir: Path
     num_classes = len(class_names)
     
     # --- FIX: Create a fixed, visually distinct color palette ---
-    # Lấy N màu từ một colormap chất lượng cao (ví dụ: tab10, tab20)
-    # Chuyển đổi sang định dạng RGB 0-255
-    palette = (plt.get_cmap('viridis', num_classes)(np.arange(num_classes))[:, :3] * 255).astype(np.uint8)
+    # Define standard colors for Road Scene Segmentation (R, G, B)
+    CLASS_COLOR_MAP = {
+        'road': (128, 64, 128),        # Purple/Gray
+        'road (tarmac)': (128, 64, 128),
+        'road marks': (255, 255, 0),   # Yellow
+        'roadline': (255, 255, 0),
+        'painted metal': (192, 192, 192), # Silver
+        'vegetation': (107, 142, 35),  # Green
+        'sky': (70, 130, 180),         # Blue
+        'concrete/stone/brick': (70, 70, 70), # Dark Gray
+        'nodrivable': (220, 20, 60),   # Red
+        'background': (0, 0, 0)        # Black
+    }
+    
+    palette = np.zeros((num_classes, 3), dtype=np.uint8)
+    
+    # Try to map class names to colors
+    used_standard_palette = False
+    for idx, name in enumerate(class_names):
+        normalized_name = name.lower().strip()
+        if normalized_name in CLASS_COLOR_MAP:
+            palette[idx] = CLASS_COLOR_MAP[normalized_name]
+            used_standard_palette = True
+        else:
+            # Fallback for unknown classes: generate a distinct color
+            # Use HSV to generate distinct colors
+            import colorsys
+            hue = idx / num_classes
+            r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
+            palette[idx] = (int(r*255), int(g*255), int(b*255))
+            
     # ---------------------------------------------------------
 
     for i, (image, gt, pred) in enumerate(samples):
         fig, axes = plt.subplots(1, 3, figsize=(24, 8))
         
         # 1. Original Image
-        if image.shape[2] == 25: # Assuming 25 channels for hyperspectral
-            rgb_image = image[:, :, [15, 8, 2]] # Example bands for false color
-        elif image.shape[2] == 5: # For 5-channel input (e.g., from BandSelector or PCA)
-            rgb_image = image[:, :, [0, 1, 2]] # Use first 3 channels as RGB
-        elif image.shape[2] == 3: # Already RGB
-            rgb_image = image
-        else: # Grayscale or other single-channel, convert to pseudo-RGB
-            rgb_image = np.stack([image[:, :, 0]] * 3, axis=-1) # Repeat first channel 3 times
+        # Handle HWC (H, W, C) format which is standard for plotting, 
+        # but ensure we are not getting CHW. Assuming input is (H, W, C) from npz save.
+        if image.shape[0] < image.shape[2]: # Detect CHW -> HWC
+             image = np.transpose(image, (1, 2, 0))
 
-        rgb_image = np.clip((rgb_image - rgb_image.min()) / (rgb_image.max() - rgb_image.min() + 1e-8), 0, 1)
+        if image.shape[2] >= 25: # Assuming 25 channels for hyperspectral
+            # Pick roughly Red, Green, Blue bands from 25 channels
+            # Assuming 400-1000nm range mapped to 0-24 indices
+            # R (~650nm) -> Index ~10-15
+            # G (~550nm) -> Index ~5-8
+            # B (~450nm) -> Index ~0-3
+            rgb_image = image[:, :, [12, 7, 2]] 
+        elif image.shape[2] == 5: 
+            # If 5 bands, likely selected bands. Just visualize first 3 as false color.
+            rgb_image = image[:, :, [0, 1, 2]] 
+        elif image.shape[2] == 3: 
+            rgb_image = image
+        else: 
+            # Grayscale
+            rgb_image = np.stack([image[:, :, 0]] * 3, axis=-1)
+
+        # Robust Normalization (Min-Max per channel or global)
+        # Using global min-max for visual consistency
+        rgb_image = rgb_image.astype(np.float32)
+        rgb_image -= rgb_image.min()
+        rgb_image /= (rgb_image.max() + 1e-8)
+        
         axes[0].imshow(rgb_image)
-        axes[0].set_title('Original Image (Processed)')
+        axes[0].set_title('Original Image (False Color / RGB)')
         axes[0].axis('off')
 
         # 2. Ground Truth (chuyển đổi sang RGB)

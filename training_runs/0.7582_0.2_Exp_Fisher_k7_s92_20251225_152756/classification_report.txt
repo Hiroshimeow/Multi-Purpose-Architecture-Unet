@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: Exp_Fisher_k7_s92
+Full Path: training_runs/Exp_Fisher_k7_s92_20251225_152756
+Training Duration: 2:01:42
+Completed Epochs: 290
+Best Validation mIoU: 0.7582
+Params (M): 0.20M
+
+--- Performance Benchmark ---
+- FPS: 212.54
+- Latency: 75.28 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+- GFLOPs: 0.68
+- Efficiency (mIoU/GFLOPs): 1.1178
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.9180, Dice = 0.9573
+- RoadLine                 : IoU = 0.6825, Dice = 0.8113
+- Vegetation               : IoU = 0.6635, Dice = 0.7977
+- Sky                      : IoU = 0.7683, Dice = 0.8690
+- NoDrivable               : IoU = 0.7590, Dice = 0.8630
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9611  0.9534    0.9573 2957113.0000
+RoadLine         0.9142  0.7291    0.8113  198976.0000
+Vegetation       0.8683  0.7377    0.7977  866072.0000
+Sky              0.9414  0.8069    0.8690  317914.0000
+NoDrivable       0.8243  0.9055    0.8630 2433685.0000
+accuracy         0.8952  0.8952    0.8952       0.8952
+macro avg        0.9019  0.8265    0.8596 6773760.0000
+weighted avg     0.8978  0.8952    0.8946 6773760.0000

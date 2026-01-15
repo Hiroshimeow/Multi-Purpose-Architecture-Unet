@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: ASRAN_svm-rfe_p224_s192_small
+Full Path: training_runs/ASRAN_svm-rfe_p224_s192_small_20251014_203819
+Training Duration: 1:25:54
+Completed Epochs: 326
+Best Validation mIoU: 0.7573
+Params (M): 0.27M
+
+--- Performance Benchmark ---
+- FPS: 1264.96
+- Latency: 12.65 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 1.02
+- Efficiency (mIoU/GFLOPs): 0.7455
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.9124, Dice = 0.9542
+- RoadLine                 : IoU = 0.6583, Dice = 0.7940
+- Vegetation               : IoU = 0.6746, Dice = 0.8057
+- Sky                      : IoU = 0.7895, Dice = 0.8823
+- NoDrivable               : IoU = 0.7520, Dice = 0.8585
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9608  0.9477    0.9542 3389034.0000
+RoadLine         0.8830  0.7213    0.7940  206713.0000
+Vegetation       0.8338  0.7793    0.8057 1025140.0000
+Sky              0.9259  0.8428    0.8823  302990.0000
+NoDrivable       0.8314  0.8873    0.8585 2652699.0000
+accuracy         0.8934  0.8934    0.8934       0.8934
+macro avg        0.8870  0.8357    0.8589 7576576.0000
+weighted avg     0.8948  0.8934    0.8933 7576576.0000

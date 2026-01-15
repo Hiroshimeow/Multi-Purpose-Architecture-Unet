@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: Exp_SAD_k7_s42_d4i9
+Full Path: training_runs/Exp_SAD_k7_s42_d4i9_20251225_113044
+Training Duration: 3:50:20
+Completed Epochs: 387
+Best Validation mIoU: 0.7654
+Params (M): 0.25M
+
+--- Performance Benchmark ---
+- FPS: 147.14
+- Latency: 108.74 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+- GFLOPs: 0.83
+- Efficiency (mIoU/GFLOPs): 0.9185
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.9192, Dice = 0.9579
+- RoadLine                 : IoU = 0.6854, Dice = 0.8134
+- Vegetation               : IoU = 0.6519, Dice = 0.7893
+- Sky                      : IoU = 0.8073, Dice = 0.8934
+- NoDrivable               : IoU = 0.7633, Dice = 0.8658
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9609  0.9549    0.9579 3110250.0000
+RoadLine         0.8929  0.7468    0.8134  197034.0000
+Vegetation       0.8006  0.7783    0.7893  849929.0000
+Sky              0.9382  0.8526    0.8934  301742.0000
+NoDrivable       0.8494  0.8828    0.8658 2615861.0000
+accuracy         0.8969  0.8969    0.8969       0.8969
+macro avg        0.8884  0.8431    0.8639 7074816.0000
+weighted avg     0.8976  0.8969    0.8968 7074816.0000

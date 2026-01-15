@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/data1/tabs/scripts/run.py", line 6, in <module>
+    import torch
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/__init__.py", line 1806, in <module>
+    class BoolStorage(_LegacyStorage):
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/__init__.py", line 1806, in BoolStorage
+    class BoolStorage(_LegacyStorage):
+KeyboardInterrupt

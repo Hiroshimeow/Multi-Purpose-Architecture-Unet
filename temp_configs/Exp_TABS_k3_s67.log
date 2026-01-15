@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/data1/tabs/scripts/run.py", line 6, in <module>
+    import torch
+  File "/data1/tabs/venv/lib/python3.10/site-packages/torch/__init__.py", line 367, in <module>
+    from torch._C import *  # noqa: F403
+KeyboardInterrupt

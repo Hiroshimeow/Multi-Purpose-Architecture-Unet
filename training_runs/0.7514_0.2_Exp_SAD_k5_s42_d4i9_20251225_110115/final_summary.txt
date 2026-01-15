@@ -1,0 +1,5 @@
+Best Validation mIoU: 0.7514
+FPS: 135.02
+Latency (ms): 118.50
+GFLOPs: 0.82
+Parameters (M): 0.25

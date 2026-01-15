@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: Exp_TABS_k5_s98314
+Full Path: training_runs/Exp_TABS_k5_s98314_20260107_233000
+Training Duration: 1 day, 4:41:43
+Completed Epochs: 357
+Best Validation mIoU: 0.7535
+Params (M): 0.38M
+
+--- Performance Benchmark ---
+- FPS: 466.95
+- Latency: 34.27 ms
+- ADAS Latency Requirement (<= 33.3 ms): NO
+- GFLOPs: 1.48
+- Efficiency (mIoU/GFLOPs): 0.5084
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.9221, Dice = 0.9595
+- RoadLine                 : IoU = 0.7072, Dice = 0.8285
+- Vegetation               : IoU = 0.6333, Dice = 0.7755
+- Sky                      : IoU = 0.7475, Dice = 0.8555
+- NoDrivable               : IoU = 0.7469, Dice = 0.8551
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9558  0.9632    0.9595 3400627.0000
+RoadLine         0.9153  0.7568    0.8285  195477.0000
+Vegetation       0.8518  0.7117    0.7755  982855.0000
+Sky              0.9099  0.8073    0.8555  380220.0000
+NoDrivable       0.8231  0.8898    0.8551 2617397.0000
+accuracy         0.8921  0.8921    0.8921       0.8921
+macro avg        0.8912  0.8257    0.8548 7576576.0000
+weighted avg     0.8931  0.8921    0.8910 7576576.0000
