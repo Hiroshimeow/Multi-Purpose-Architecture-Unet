@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: SF_S25873_Correlation_k7_Tiny
+Full Path: training_runs_reproduce/SF_S25873_Correlation_k7_Tiny_20260120_234011
+Training Duration: 2:48:55
+Completed Epochs: 267
+Best Validation mIoU: 0.5898
+Params (M): 0.48M
+
+--- Performance Benchmark ---
+- FPS: 491.37
+- Latency: 16.28 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 0.37
+- Efficiency (mIoU/GFLOPs): 1.5811
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8243, Dice = 0.9037
+- RoadLine                 : IoU = 0.3353, Dice = 0.5022
+- Vegetation               : IoU = 0.5514, Dice = 0.7109
+- Sky                      : IoU = 0.6246, Dice = 0.7689
+- NoDrivable               : IoU = 0.6132, Dice = 0.7603
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9258  0.8826    0.9037 3434975.0000
+RoadLine         0.5143  0.4908    0.5022  153776.0000
+Vegetation       0.6743  0.7516    0.7109  867669.0000
+Sky              0.8093  0.7323    0.7689  372511.0000
+NoDrivable       0.7462  0.7748    0.7603 2697469.0000
+accuracy         0.8134  0.8134    0.8134       0.8134
+macro avg        0.7340  0.7264    0.7292 7526400.0000
+weighted avg     0.8183  0.8134    0.8152 7526400.0000

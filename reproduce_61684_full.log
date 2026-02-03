@@ -1,0 +1,25 @@
+nohup: ignoring input
+🚀 Launching 18 jobs for Seed 61684 (Epochs=400)...
+  + Started: S61684_TABS_k3
+  + Started: S61684_TABS_k5
+  + Started: S61684_TABS_k7
+  + Started: S61684_SVM-RFE_k3
+  + Started: S61684_SVM-RFE_k5
+  + Started: S61684_SVM-RFE_k7
+  + Started: S61684_Entropy_k3
+  + Started: S61684_Entropy_k5
+  + Started: S61684_Entropy_k7
+  + Started: S61684_Fisher_k3
+  + Started: S61684_Fisher_k5
+  + Started: S61684_Fisher_k7
+  + Started: S61684_Correlation_k3
+  + Started: S61684_Correlation_k5
+  + Started: S61684_Correlation_k7
+  + Started: S61684_SAD_k3
+  + Started: S61684_SAD_k5
+  + Started: S61684_SAD_k7
+
+All 18 jobs launched. Waiting for completion...
+
+--- SUMMARY ---
+✅ All jobs completed successfully.

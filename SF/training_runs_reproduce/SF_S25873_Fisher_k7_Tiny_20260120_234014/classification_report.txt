@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: SF_S25873_Fisher_k7_Tiny
+Full Path: training_runs_reproduce/SF_S25873_Fisher_k7_Tiny_20260120_234014
+Training Duration: 3:23:25
+Completed Epochs: 346
+Best Validation mIoU: 0.6034
+Params (M): 0.48M
+
+--- Performance Benchmark ---
+- FPS: 731.71
+- Latency: 10.93 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 0.37
+- Efficiency (mIoU/GFLOPs): 1.6176
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8289, Dice = 0.9064
+- RoadLine                 : IoU = 0.3836, Dice = 0.5545
+- Vegetation               : IoU = 0.5702, Dice = 0.7262
+- Sky                      : IoU = 0.6321, Dice = 0.7746
+- NoDrivable               : IoU = 0.6022, Dice = 0.7517
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9232  0.8903    0.9064 3395448.0000
+RoadLine         0.5873  0.5251    0.5545  164124.0000
+Vegetation       0.7466  0.7070    0.7262 1021351.0000
+Sky              0.8352  0.7222    0.7746  389795.0000
+NoDrivable       0.7188  0.7878    0.7517 2555682.0000
+accuracy         0.8139  0.8139    0.8139       0.8139
+macro avg        0.7622  0.7265    0.7427 7526400.0000
+weighted avg     0.8179  0.8139    0.8149 7526400.0000

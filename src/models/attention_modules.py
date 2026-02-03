@@ -21,20 +21,29 @@ class LearnableBandSelector(nn.Module):
 
     def _gumbel_topk_sampling(self, logits, k, temperature=1.0):
         """
-        Differentiable Top-k sampling using the Gumbel-Softmax trick.
-        Returns a 'hard' one-hot-like mask of selected indices.
+        Differentiable Top-k sampling using the Gumbel-Softmax trick with Straight-Through Estimator (STE).
         """
-        # Sample Gumbel noise
+        # 1. Sample Gumbel noise
+        # g = -log(-log(u))
         gumbel_noise = -torch.log(-torch.log(torch.rand_like(logits, device=logits.device) + 1e-20) + 1e-20)
-        # Add noise to logits
-        perturbed_logits = (logits + gumbel_noise) / temperature
-        # Get top-k scores and indices
-        _, top_k_indices = torch.topk(perturbed_logits, k=k, dim=-1)
-
-        # Create a hard one-hot-like mask
-        selection_mask = torch.zeros_like(logits, dtype=torch.float32)
-        selection_mask.scatter_(-1, top_k_indices, 1.0)
-        return selection_mask
+        
+        # 2. Add noise to logits and apply softmax (Soft approximation)
+        y_soft = F.softmax((logits + gumbel_noise) / temperature, dim=-1)
+        
+        # 3. Generate Hard Mask (Discrete) using Top-k
+        # We use the perturbed logits to find indices, preserving stochasticity
+        _, top_k_indices = torch.topk(logits + gumbel_noise, k=k, dim=-1)
+        
+        # Create hard one-hot mask
+        y_hard = torch.zeros_like(logits).scatter_(-1, top_k_indices, 1.0)
+        
+        # 4. Straight-Through Estimator (STE)
+        # Forward pass uses y_hard (binary). Backward pass uses y_soft (gradients).
+        # y = y_soft + (y_hard - y_soft).detach()
+        # This allows gradients to flow from the output back to 'logits' via 'y_soft'
+        y = y_soft + (y_hard - y_soft).detach()
+        
+        return y, top_k_indices
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x shape: (B, C, H, W)
@@ -43,18 +52,30 @@ class LearnableBandSelector(nn.Module):
         if C != self.in_channels:
             raise ValueError(f"Input tensor has {C} channels, but selector was initialized for {self.in_channels}.")
 
-        # Get the hard selection mask. Gradients flow via straight-through estimator.
-        selection_mask = self._gumbel_topk_sampling(self.logits, self.k)
+        # Get the selection mask with STE
+        # selection_mask shape: (C,) or (B, C) depending on implementation. 
+        # Here logits are (C,), so mask is (C,)
+        selection_mask, top_k_indices = self._gumbel_topk_sampling(self.logits, self.k)
         
-        # Use the mask to select indices for a dense output
-        # This part is non-differentiable by itself, but Gumbel-Softmax handles the gradient flow.
-        selected_indices = selection_mask.nonzero(as_tuple=True)[0]
+        # Expand mask for broadcasting: (C,) -> (1, C, 1, 1)
+        mask_expanded = selection_mask.view(1, C, 1, 1)
         
-        # Ensure selected_indices is always a list-like object for indexing
-        if selected_indices.dim() == 0:
-            selected_indices = selected_indices.unsqueeze(0)
-
-        dense_output = torch.index_select(x, dim=1, index=selected_indices)
+        # Apply mask to input.
+        # Crucial: This multiplication connects x and mask in the computation graph.
+        # Since 'mask' contains 'y_soft' in its backward path, gradients will flow to logits.
+        x_masked = x * mask_expanded
+        
+        # Select the top-k channels.
+        # We rely on the fact that non-selected channels are zeroed out (or close to it in soft version).
+        # However, to physically reduce channels to 'k' for the UNet, we must index.
+        # Even though 'index_select' is technically not differentiable w.r.t indices,
+        # the values at those indices come from 'x_masked', which IS differentiable w.r.t logits.
+        
+        # Note: If logits are shared across batch (default), we just take the indices from the single logit vector.
+        # If we wanted per-sample selection, we'd need more complex gathering.
+        # Here logits is (C,), so top_k_indices is (k,).
+        
+        dense_output = torch.index_select(x_masked, dim=1, index=top_k_indices)
 
         return dense_output
 
@@ -150,6 +171,15 @@ class SpatialAttention(nn.Module):
         x = torch.cat([avg_out, max_out], dim=1)
         x = self.conv1(x)
         return self.sigmoid(x)
+
+class SpatialAttentionBlock(nn.Module):
+    """Wrapper to apply SpatialAttention and multiply by input."""
+    def __init__(self, in_channels, kernel_size=7):
+        super().__init__()
+        self.sa = SpatialAttention(kernel_size=kernel_size)
+
+    def forward(self, x):
+        return x * self.sa(x)
 
 class CBAM(nn.Module):
     def __init__(self, in_planes, ratio=16, kernel_size=7):

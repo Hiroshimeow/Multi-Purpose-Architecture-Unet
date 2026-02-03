@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: Exp_SpectralFormer_Seg
+Full Path: training_runs/Exp_SpectralFormer_Seg_20260115_182310
+Training Duration: 2:49:53
+Completed Epochs: 400
+Best Validation mIoU: 0.5792
+Params (M): 2.15M
+
+--- Performance Benchmark ---
+- FPS: 1232.98
+- Latency: 12.98 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 1.01
+- Efficiency (mIoU/GFLOPs): 0.5713
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8107, Dice = 0.8955
+- RoadLine                 : IoU = 0.2784, Dice = 0.4356
+- Vegetation               : IoU = 0.5865, Dice = 0.7394
+- Sky                      : IoU = 0.6316, Dice = 0.7742
+- NoDrivable               : IoU = 0.5886, Dice = 0.7410
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.8992  0.8917    0.8955 3400540.0000
+RoadLine         0.4668  0.4083    0.4356  190964.0000
+Vegetation       0.7326  0.7462    0.7394 1057437.0000
+Sky              0.8195  0.7337    0.7742  275455.0000
+NoDrivable       0.7324  0.7498    0.7410 2602004.0000
+accuracy         0.8041  0.8041    0.8041       0.8041
+macro avg        0.7301  0.7059    0.7171 7526400.0000
+weighted avg     0.8043  0.8041    0.8040 7526400.0000

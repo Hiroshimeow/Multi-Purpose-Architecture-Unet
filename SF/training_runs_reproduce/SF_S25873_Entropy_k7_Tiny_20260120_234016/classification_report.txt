@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: SF_S25873_Entropy_k7_Tiny
+Full Path: training_runs_reproduce/SF_S25873_Entropy_k7_Tiny_20260120_234016
+Training Duration: 3:27:58
+Completed Epochs: 359
+Best Validation mIoU: 0.6087
+Params (M): 0.48M
+
+--- Performance Benchmark ---
+- FPS: 757.84
+- Latency: 10.56 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 0.37
+- Efficiency (mIoU/GFLOPs): 1.6319
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.8295, Dice = 0.9068
+- RoadLine                 : IoU = 0.3932, Dice = 0.5645
+- Vegetation               : IoU = 0.5824, Dice = 0.7361
+- Sky                      : IoU = 0.6076, Dice = 0.7559
+- NoDrivable               : IoU = 0.6307, Dice = 0.7736
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9151  0.8986    0.9068 3334750.0000
+RoadLine         0.5907  0.5405    0.5645  160381.0000
+Vegetation       0.7270  0.7455    0.7361  943269.0000
+Sky              0.7983  0.7179    0.7559  374794.0000
+NoDrivable       0.7615  0.7861    0.7736 2713206.0000
+accuracy         0.8222  0.8222    0.8222       0.8222
+macro avg        0.7585  0.7377    0.7474 7526400.0000
+weighted avg     0.8234  0.8222    0.8226 7526400.0000

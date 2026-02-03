@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: S61684_TABS_k3
+Full Path: training_runs/S61684_TABS_k3_20260120_124906
+Training Duration: 10:15:29
+Completed Epochs: 386
+Best Validation mIoU: 0.7551
+Params (M): 0.27M
+
+--- Performance Benchmark ---
+- FPS: 1255.93
+- Latency: 6.37 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 0.77
+- Efficiency (mIoU/GFLOPs): 0.9794
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.9161, Dice = 0.9562
+- RoadLine                 : IoU = 0.6628, Dice = 0.7972
+- Vegetation               : IoU = 0.6762, Dice = 0.8068
+- Sky                      : IoU = 0.7697, Dice = 0.8699
+- NoDrivable               : IoU = 0.7308, Dice = 0.8445
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9559  0.9566    0.9562 3345856.0000
+RoadLine         0.9010  0.7148    0.7972  183643.0000
+Vegetation       0.8893  0.7384    0.8068 1266400.0000
+Sky              0.9515  0.8011    0.8699  254534.0000
+NoDrivable       0.8009  0.8931    0.8445 2526143.0000
+accuracy         0.8879  0.8879    0.8879       0.8879
+macro avg        0.8997  0.8208    0.8549 7576576.0000
+weighted avg     0.8916  0.8879    0.8872 7576576.0000

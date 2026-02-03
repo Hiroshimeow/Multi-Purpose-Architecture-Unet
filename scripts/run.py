@@ -154,6 +154,12 @@ def main(args):
     if args.epochs:
         config['training']['num_epochs'] = args.epochs
 
+    # Overrides for Loss alpha/beta
+    if args.alpha is not None:
+        config['loss']['params']['alpha'] = args.alpha
+    if args.beta is not None:
+        config['loss']['params']['beta'] = args.beta
+
     # Xử lý tham số --sea (SE Attention)
     if args.sea is not None:
         sac = model_params.get('sac_params')
@@ -181,7 +187,24 @@ def main(args):
     num_select_bands = model_params.get('in_channels') or model_params.get('selected_channels')
     model_type = config['model']['name']
 
-    if num_select_bands is not None and num_select_bands < 25: # Only select if less than full bands
+    # CRITICAL FIX FOR TABS: TABS needs access to all 25 bands to learn selection.
+    # If we are running TABS, we should NOT slice the dataset based on rankings.
+    # We should sets 'num_selected_bands' instead.
+    if model_type in ['TABS', 'ASRAN_LBS', 'UnetBandS']:
+        print(f"✓ Detected Learnable Band Selection model ({model_type}).")
+        # Ensure input is full 25 bands
+        model_params['in_channels'] = 25
+        # If args.channels was passed, it likely overwrote in_channels earlier.
+        # We interpreted args.channels as 'k' (num_selected_bands) for TABS.
+        if args.channels:
+            model_params['num_selected_bands'] = int(args.channels)
+            print(f"✓ Set num_selected_bands to {args.channels} for TABS.")
+        
+        # Explicitly remove any static selection indices to prevent Dataset slicing
+        if 'selected_bands_indices' in model_params:
+            del model_params['selected_bands_indices']
+
+    elif num_select_bands is not None and num_select_bands < 25: # Only select if less than full bands (FOR BASELINES)
         selected_method_ranking = None
         # Use the specified ranking method from the config, with 'SVM' as a fallback.
         ranking_key = config['model'].get('ranking_method', 'SVM')
@@ -225,10 +248,24 @@ def main(args):
     random.seed(data_cfg.get('seed', 42))
     random.shuffle(all_files)
 
-    # Tách tập dữ liệu train/val
+    # Tách tập dữ liệu train/val/test
     val_split = data_cfg.get('val_split', 0.2)
-    split_idx = int((1.0 - val_split) * len(all_files))
-    train_files, val_files = all_files[:split_idx], all_files[split_idx:]
+    test_split = data_cfg.get('test_split', 0.0) # Default to 0.0 (no test set) if not specified
+
+    n_total = len(all_files)
+    n_test = int(test_split * n_total)
+    n_val = int(val_split * n_total)
+    n_train = n_total - n_val - n_test
+
+    # Files distribution: [Train ... | Val ... | Test ...]
+    train_files = all_files[:n_train]
+    val_files = all_files[n_train : n_train + n_val]
+    test_files = all_files[n_train + n_val :]
+
+    if test_split > 0:
+        print(f"✓ Data Split: {len(train_files)} Train, {len(val_files)} Val, {len(test_files)} Test ({test_split*100:.0f}%)")
+    else:
+        print(f"✓ Data Split: {len(train_files)} Train, {len(val_files)} Val (No Test Set)")
 
     stats = None
     if config['data'].get('normalization') == 'z-score':
@@ -245,10 +282,24 @@ def main(args):
     train_dataset = TiledHyperspectralDataset(file_paths=train_files, config=config, augment=True, stats=stats)
     val_dataset = TiledHyperspectralDataset(file_paths=val_files, config=config, augment=False, stats=stats)
 
+    num_workers = args.num_workers if args.num_workers is not None else (min(os.cpu_count(), 4) if platform.system() != 'Windows' else 0)
+
+    test_loader = None
+    if len(test_files) > 0:
+        test_dataset = TiledHyperspectralDataset(file_paths=test_files, config=config, augment=False, stats=stats)
+        if len(test_dataset) > 0:
+            test_loader = DataLoader(
+                test_dataset,
+                batch_size=config['training']['batch_size'],
+                shuffle=False,
+                num_workers=num_workers,
+                pin_memory=True
+            )
+            print(f"✓ Test loader ready with {len(test_dataset)} patches.")
+
     if len(train_dataset) == 0 or len(val_dataset) == 0:
         raise ValueError("Training or validation dataset is empty.")
 
-    num_workers = args.num_workers if args.num_workers is not None else (min(os.cpu_count(), 8) if platform.system() != 'Windows' else 0)
     train_loader = DataLoader(
         train_dataset,
         batch_size=config['training']['batch_size'],
@@ -329,6 +380,10 @@ def main(args):
     )
     trainer.train()
 
+    # --- Final Test Set Evaluation ---
+    if test_loader is not None:
+        trainer.evaluate_test_set(test_loader)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -343,6 +398,8 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=None, help='Override learning rate.')
     parser.add_argument('--batch_size', type=int, default=None, help='Override batch size.')
     parser.add_argument('--epochs', type=int, default=None, help='Override number of training epochs.')
+    parser.add_argument('--alpha', type=float, default=None, help='Override alpha for CombinedLoss.')
+    parser.add_argument('--beta', type=float, default=None, help='Override beta for CombinedLoss.')
     parser.add_argument('--sea', type=lambda x: (str(x).lower() == 'true'), default=None,
                         help='Enable or disable SE Attention in SAC module (True/False).')
     parser.add_argument('--num_workers', type=int, default=None, help='Override number of data loading workers.')

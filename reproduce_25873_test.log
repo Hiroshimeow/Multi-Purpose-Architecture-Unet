@@ -1,0 +1,42 @@
+🚀 Launching 18 jobs for Seed 25873 (Epochs=2)...
+  + Started: S25873_TABS_k3_TEST
+  + Started: S25873_TABS_k5_TEST
+  + Started: S25873_TABS_k7_TEST
+  + Started: S25873_SVM-RFE_k3_TEST
+  + Started: S25873_SVM-RFE_k5_TEST
+  + Started: S25873_SVM-RFE_k7_TEST
+  + Started: S25873_Entropy_k3_TEST
+  + Started: S25873_Entropy_k5_TEST
+  + Started: S25873_Entropy_k7_TEST
+  + Started: S25873_Fisher_k3_TEST
+  + Started: S25873_Fisher_k5_TEST
+  + Started: S25873_Fisher_k7_TEST
+  + Started: S25873_Correlation_k3_TEST
+  + Started: S25873_Correlation_k5_TEST
+  + Started: S25873_Correlation_k7_TEST
+  + Started: S25873_SAD_k3_TEST
+  + Started: S25873_SAD_k5_TEST
+  + Started: S25873_SAD_k7_TEST
+
+All 18 jobs launched. Waiting for completion...
+
+--- SUMMARY ---
+❌ Job TABS k=3 FAILED. Check logs_25873/
+❌ Job TABS k=5 FAILED. Check logs_25873/
+❌ Job TABS k=7 FAILED. Check logs_25873/
+❌ Job SVM-RFE k=3 FAILED. Check logs_25873/
+❌ Job SVM-RFE k=5 FAILED. Check logs_25873/
+❌ Job SVM-RFE k=7 FAILED. Check logs_25873/
+❌ Job Entropy k=3 FAILED. Check logs_25873/
+❌ Job Entropy k=5 FAILED. Check logs_25873/
+❌ Job Entropy k=7 FAILED. Check logs_25873/
+❌ Job Fisher k=3 FAILED. Check logs_25873/
+❌ Job Fisher k=5 FAILED. Check logs_25873/
+❌ Job Fisher k=7 FAILED. Check logs_25873/
+❌ Job Correlation k=3 FAILED. Check logs_25873/
+❌ Job Correlation k=5 FAILED. Check logs_25873/
+❌ Job Correlation k=7 FAILED. Check logs_25873/
+❌ Job SAD k=3 FAILED. Check logs_25873/
+❌ Job SAD k=5 FAILED. Check logs_25873/
+❌ Job SAD k=7 FAILED. Check logs_25873/
+⚠️  18 jobs failed. Please inspect logs.

@@ -1,0 +1,11 @@
+/home/ayumi/.local/lib/python3.10/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+✓ Set in_channels to: 7
+✓ Detected Learnable Band Selection model (TABS).
+✓ Set num_selected_bands to 7 for TABS.
+ExperimentManager initialized. Path: 'training_runs/Ablation_WeightedCE_k7_s101_20260122_192910'
+✓ Final configuration saved to training_runs/Ablation_WeightedCE_k7_s101_20260122_192910/config.yaml
+Dataset: Using all 25 available bands.
+Using 'default' configurable augmentation pipeline.
+Collecting patch coordinates for 601 files for training set...
+  0%|          | 0/601 [00:00<?, ?it/s]  0%|          | 2/601 [00:00<00:46, 12.84it/s]  1%|          | 4/601 [00:00<00:43, 13.87it/s]  1%|          | 6/601 [00:00<00:39, 14.96it/s]  1%|▏         | 8/601 [00:00<00:38, 15.50it/s]  2%|▏         | 10/601 [00:00<00:37, 15.79it/s]  2%|▏         | 12/601 [00:00<00:39, 14.98it/s]  2%|▏         | 14/601 [00:00<00:44, 13.20it/s]  3%|▎         | 16/601 [00:01<00:43, 13.47it/s]  3%|▎         | 18/601 [00:01<00:43, 13.55it/s]  3%|▎         | 20/601 [00:01<00:42, 13.73it/s]  4%|▎         | 22/601 [00:01<00:41, 13.82it/s]  4%|▍         | 24/601 [00:01<00:41, 13.93it/s]  4%|▍         | 26/601 [00:01<00:39, 14.61it/s]  5%|▍         | 28/601 [00:01<00:37, 15.12it/s]

@@ -24,7 +24,7 @@ Kiến trúc UnetBandS (UNet with BandSelector)
 """
 import torch.nn as nn
 from .unet_base import UNetBase
-from .attention_modules import BandSelector
+from .attention_modules import BandSelector, SpatialAttentionBlock
 
 class UnetBandS(nn.Module):
     def __init__(self, in_channels, num_classes, num_selected_bands=5, **kwargs):
@@ -34,7 +34,7 @@ class UnetBandS(nn.Module):
         self.unet = UNetBase(
             in_channels=num_selected_bands, 
             num_classes=num_classes,
-            attention_block=None,
+            attention_block=SpatialAttentionBlock,
             **kwargs
         )
 

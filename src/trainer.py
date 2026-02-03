@@ -109,6 +109,26 @@ class Trainer:
         for epoch in range(self.start_epoch, self.num_epochs):
             epoch_num = epoch + 1
             print(f"\n--- Epoch {epoch_num}/{self.num_epochs} ---")
+
+            # --- Temperature Annealing for LearnableBandSelector ---
+            # Decays from 5.0 to 0.1 over first 100 epochs
+            if epoch < 100:
+                initial_temp = 5.0
+                final_temp = 0.1
+                new_temp = initial_temp * (final_temp / initial_temp) ** (epoch / 100.0)
+            else:
+                new_temp = 0.1
+
+            # Handle DataParallel wrapper if present
+            model_ref = self.model.module if isinstance(self.model, torch.nn.DataParallel) else self.model
+            
+            # Update temperature if model has 'band_selector' module
+            if hasattr(model_ref, 'band_selector') and hasattr(model_ref.band_selector, 'temperature'):
+                model_ref.band_selector.temperature = new_temp
+                # Only print on first batch or periodically to avoid clutter? No, once per epoch is fine.
+                print(f"  -> Updated Gumbel Temperature to {new_temp:.4f}")
+            # -------------------------------------------------------
+
             train_loss = self._train_one_epoch()
             val_loss, val_acc, val_miou, val_samples = self._evaluate()
             if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
@@ -268,6 +288,64 @@ class Trainer:
                     self.model.segmentation_network.use_sr_head = original_sr_state
                 elif hasattr(self.model, 'use_sr_head'):
                     self.model.use_sr_head = original_sr_state
+
+    def evaluate_test_set(self, test_loader):
+        """Evaluates the model on an independent Test Set using the best saved checkpoint."""
+        print("\n--- Starting Evaluation on TEST SET ---")
+        
+        # Load best model
+        best_model_path = self.manager.models_dir / "best_model.pth"
+        if best_model_path.exists():
+            print(f"   Loading best model from: {best_model_path}")
+            self.model.load_state_dict(torch.load(best_model_path, map_location=self.device))
+        else:
+            print("   Warning: best_model.pth not found. Using current model state.")
+
+        self.model.eval()
+        total_loss = 0.0
+        all_preds, all_trues = [], []
+        
+        with torch.no_grad():
+            pbar = tqdm(test_loader, desc="Testing", leave=False)
+            for images, masks in pbar:
+                images = images.to(self.device, non_blocking=True)
+                masks = masks.to(self.device, non_blocking=True)
+                with torch.amp.autocast(device_type=self.device.type, dtype=torch.float16, enabled=(self.device.type == 'cuda')):
+                    outputs = self.model(images)
+                    
+                    if isinstance(outputs, dict):
+                        seg_logits = outputs.get('segmentation', outputs)
+                        loss = self.criterion(seg_logits, masks)
+                    else:
+                        seg_logits = outputs
+                        loss = self.criterion(outputs, masks)
+
+                total_loss += loss.item()
+                preds = torch.argmax(seg_logits, dim=1)
+                all_preds.append(preds.cpu().numpy())
+                all_trues.append(masks.cpu().numpy())
+
+        flat_preds = np.concatenate([p.flatten() for p in all_preds])
+        flat_trues = np.concatenate([t.flatten() for t in all_trues])
+        
+        accuracy = accuracy_score(flat_trues, flat_preds)
+        miou = jaccard_score(flat_trues, flat_preds, average='macro', zero_division=0)
+        avg_loss = total_loss / len(test_loader)
+        
+        print(f"✅ Test Set Results: Loss: {avg_loss:.4f} | Accuracy: {accuracy:.4f} | mIoU: {miou:.4f}")
+        
+        # Save results to a file
+        try:
+            test_res_path = self.manager.output_dir / "test_results.txt"
+            with open(test_res_path, 'w') as f:
+                f.write(f"Test mIoU: {miou:.4f}\n")
+                f.write(f"Test Accuracy: {accuracy:.4f}\n")
+                f.write(f"Test Loss: {avg_loss:.4f}\n")
+            print(f"   Saved test results to {test_res_path}")
+        except Exception as e:
+            print(f"   Could not save test results: {e}")
+            
+        return {'loss': avg_loss, 'accuracy': accuracy, 'miou': miou}
 
     def _run_final_analysis(self):
         print("\n4. Final Evaluation and Analysis...")

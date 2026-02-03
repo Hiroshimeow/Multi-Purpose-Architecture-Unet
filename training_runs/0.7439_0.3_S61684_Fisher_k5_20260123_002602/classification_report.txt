@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: S61684_Fisher_k5
+Full Path: training_runs/S61684_Fisher_k5_20260123_002602
+Training Duration: 6:10:50
+Completed Epochs: 278
+Best Validation mIoU: 0.7439
+Params (M): 0.27M
+
+--- Performance Benchmark ---
+- FPS: 401.78
+- Latency: 19.91 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 0.78
+- Efficiency (mIoU/GFLOPs): 0.9514
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.9103, Dice = 0.9530
+- RoadLine                 : IoU = 0.6778, Dice = 0.8080
+- Vegetation               : IoU = 0.6549, Dice = 0.7915
+- Sky                      : IoU = 0.7655, Dice = 0.8672
+- NoDrivable               : IoU = 0.7109, Dice = 0.8311
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.9501  0.9560    0.9530 3330936.0000
+RoadLine         0.8818  0.7455    0.8080  179212.0000
+Vegetation       0.8637  0.7304    0.7915 1165800.0000
+Sky              0.8938  0.8422    0.8672  390803.0000
+NoDrivable       0.7984  0.8665    0.8311 2459649.0000
+accuracy         0.8809  0.8809    0.8809       0.8809
+macro avg        0.8776  0.8281    0.8502 7526400.0000
+weighted avg     0.8826  0.8809    0.8802 7526400.0000

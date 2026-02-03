@@ -1,0 +1,33 @@
+--- Final Training Report ---
+
+Run Name: Exp_SF_Base_P8
+Full Path: training_runs/Exp_SF_Base_P8_20260115_194249
+Training Duration: 2:11:30
+Completed Epochs: 320
+Best Validation mIoU: 0.5357
+Params (M): 7.58M
+
+--- Performance Benchmark ---
+- FPS: 381.77
+- Latency: 20.96 ms
+- ADAS Latency Requirement (<= 33.3 ms): YES
+- GFLOPs: 5.08
+- Efficiency (mIoU/GFLOPs): 0.1055
+
+--- Per-Class Metrics (from final evaluation) ---
+- Road                     : IoU = 0.7934, Dice = 0.8848
+- RoadLine                 : IoU = 0.1825, Dice = 0.3087
+- Vegetation               : IoU = 0.5498, Dice = 0.7095
+- Sky                      : IoU = 0.5759, Dice = 0.7309
+- NoDrivable               : IoU = 0.5771, Dice = 0.7318
+
+--- Classification Report (Scikit-learn) ---
+              precision  recall  f1-score      support
+Road             0.8985  0.8716    0.8848 3476033.0000
+RoadLine         0.2917  0.3277    0.3087  148685.0000
+Vegetation       0.6715  0.7520    0.7095  961746.0000
+Sky              0.7607  0.7033    0.7309  266755.0000
+NoDrivable       0.7331  0.7305    0.7318 2673181.0000
+accuracy         0.7895  0.7895    0.7895       0.7895
+macro avg        0.6711  0.6770    0.6731 7526400.0000
+weighted avg     0.7939  0.7895    0.7912 7526400.0000

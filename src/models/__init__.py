@@ -1,6 +1,7 @@
 from .unet_bandselector import UnetBandS as OriginalUnetBandS
 from .asran_network import ASRAN
 from .unet_base import UNetBase
+from .deploy import DeployTABS
 
 class StandardUNet(UNetBase):
     """Wrapper to ensure StandardUNet can be called with legacy kwargs it doesn't use."""
@@ -21,6 +22,7 @@ def get_model(name: str, params: dict):
         'ASRAN_LBS': TABS,
         'StandardUNet': StandardUNet,
         'ASRAN': ASRAN,
+        'DeployTABS': DeployTABS,
     }
 
     if name in models:
