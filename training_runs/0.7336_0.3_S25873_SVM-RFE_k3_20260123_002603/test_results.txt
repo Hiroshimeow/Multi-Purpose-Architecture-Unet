@@ -1,3 +1,0 @@
-Test mIoU: 0.7540
-Test Accuracy: 0.8878
-Test Loss: 0.3039
