@@ -17,8 +17,6 @@
 # Allow specific files without extensions if needed (e.g., Dockerfile)
 # !Dockerfile
 
-!/Image_dataset/
-!training_runs/
 !/thesis/
 
 # --- Blocklist ---
@@ -31,6 +29,10 @@ __pycache__/
 *.pyc
 
 # Re-ignore dataset and run directories
+venv/
+Image_dataset/
+training_runs/
+SF/
 
 /Image_dataset_3band/
 /Image_dataset_pca_3band/
